@@ -1,0 +1,45 @@
+# In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
+
+default:
+  enabled: true
+  send-message-on-levelup: true
+  levelup-message: '<green>You leveled up! New level: %level%</green>'
+  # Messages use MiniMessage format for color and text effects
+  max-level: 100
+  exp-gain-multiplier: 0.0
+  use-milestones: true
+  exp-gain:
+    on-chat: 0.2
+    on-mobkill: 0.4
+    on-playerkill: 0.6
+    on-blockbreak: 0.01
+    on-blockplace: 0.01
+  exp-requirements:
+    base-exp-req: 8.0
+    exp-req-multiplier: 1.1
+    # formula: previous-exp-cost * exp-req-multiplier
+    # in default configuration, exp cost increases by 10% every level. Level 2 costs 8 exp (base), level 3 costs 8.8, 4 costs 9.68, etc.
+    # leveling up is easier early on, and gets harder slower, but gets much more difficult in later levels than linear
+    exp-scalar-type: 'EXPONENTIAL'
+
+
+mining:
+  enabled: true
+  send-message-on-levelup: true
+  levelup-message: '<green>You leveled up! New mining level: %level%</green>'
+  max-level: 20
+  exp-gain-multiplier: 0.0
+  use-milestones: true
+  exp-gain:
+    on-chat: 0.0
+    on-mobkill: 0.0
+    on-playerkill: 0.0
+    on-blockbreak: 0.1
+    on-blockplace: 0.0
+  exp-requirements:
+    base-exp-req: 8.0
+    exp-req-multiplier: 0.5
+    # formula: player-level * (base-exp-req * exp-req-multiplier) + base-exp-req
+    # in default configuraiton, adds 4 exp (0.5 * 8) every level. Level 2 costs 8, level 3 costs 12, 4 costs 16, etc.
+    # leveling up is harder early on, and gets harder quicker, but never gets as hard as multiplier
+    exp-scalar-type: 'LINEAR'

@@ -1,0 +1,17 @@
+name: ServerLevels
+version: '${version}'
+
+main: us.to.midensthings.serverLevels.ServerLevels
+api-version: '26.1.2'
+load: POSTWORLD
+
+permissions:
+  serverlevels.commands.core:
+    default: op
+    description: Allows usage of server levels commands (required for ANY command)
+  serverlevels.commands.exp:
+    default: op
+    description: Allows usage of server levels commands (required for ANY command)
+  serverlevels.commands.level:
+    default: op
+    description: Allows usage of server levels commands (required for ANY command)

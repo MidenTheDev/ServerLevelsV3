@@ -1,0 +1,30 @@
+# In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
+default:
+  5:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 5!</green>'
+      # Messages use MiniMessage format for color and text effects
+  10:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 10!</green>'
+  15:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 15!</green>'
+  20:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 20!</green>'
+
+mining:
+  20:
+    commands:
+      - 'give %player% diamond_pickaxe 1'
+    messages:
+      - '<green>You''ve earned a Diamond Pickaxe for reaching mining level 20!</green>'
