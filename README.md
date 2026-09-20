@@ -9,7 +9,7 @@ Using this plugin, you can define your own custom leveling systems. This is done
 
 The plugin also natively supports the following plugins to add additional support:
 ## 💻 Commands:
-/sl **set** [exp|level] [<player] [amount] [system] - Sets the exp or level of a specified player to the specified amount in the specified level system
+/sl **set** [exp|level] [player] [amount] [system] - Sets the exp or level of a specified player to the specified amount in the specified level system
 
 /sl **add** [exp|level] [player] [amount] [system] - Gives the specified amount of exp or levels to the given player in the specified level system.
 
