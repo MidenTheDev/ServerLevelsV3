@@ -46,3 +46,6 @@ A: Maybe! Check the table above to see if I'm already working on it or planning 
 
 #### Q: Can you bring back the yml file data storage?
 A: I'd really rather not. Using yml files to store the data for each player is incredibly slow compared to databases. If enough people really want yml storage back, then I will bring it back, but the demand will have to be rather large. 
+
+#### Q: I need help! X Isn't working!
+A: Check the relevant Wiki page for the feature that isn't working and make sure your configs are set up properly. If you cannot find the issue yourself, join the Discord server and request support there.
