@@ -10,12 +10,12 @@ Using this plugin, you can define your own custom leveling systems. This is done
 The plugin also supports the following plugins to add new ways to gain exp:
 |Plugin|Has Support|
 |------|-----------|
-|Project Korra|:x: (W.I.P)|
-|Nouveau Enchanting|:x: (W.I.P)|
-|Mythic Mobs|:x: (W.I.P)|
-|ItemsAdder|:x: (W.I.P)|
+|Project Korra|❌ (W.I.P)|
+|Nouveau Enchanting|❌ (W.I.P)|
+|Mythic Mobs|❌ (W.I.P)|
+|ItemsAdder|❌ (W.I.P)|
 
-## :file_folder: Setup:
+## 📁 Setup:
 The bulk of the setup is done the `levelsystems.yml` file generated after your server boots for the first time. By default, the plugin comes with a generalized default level system that demonstrates how custom level systems are structured. See the Wiki Page for more details on setting up your custom system exactly how you want it.
 
 If you want to give your players rewards for leveling up, this is done in the `milestones.yml` file, where you can setup custom rewards for specific levels. Again, the plugin ships with a default configuration file that should give sufficient examples on how to set up your own rewards, but there is a dedicated Wiki Page that goes into much greater detail if neeeded.
@@ -30,14 +30,14 @@ In some cases, you may want players to gain experience for killing mobs, but you
 |/sl **remove** [exp/level] [player] [amount] [system]| serverlevels.commands.remove | Removes the specified amount of exp or levels from the given player in the specified level system.|
 |/slreload | serverlevels.commands.reload |Reloads the plugin, loading changes made in all configs and refreshing the database.|
 
-## :ledger: Planned Features:
+## 📒 Planned Features:
 - In-game GUI for setting up and customizing Level Systems
 - Support for more plugins (See the table above for current and W.I.P plugins).
 - Customizable chat prefix to display players' levels.
 - EXP bar hijacking to replace the vanilla exp system with your custom one.
 - Indicators to players when they gain exp.
 
-## ❓FAQ:
+## ❓ FAQ:
 #### Q: Where does the V3 come from?
 A: This plugin is the 3rd iteration of the Server Levels plugin that I've made. The first version is still available on Spigot on my old account and the GitHub repo is still public on my profile but is archived. V2 Never saw an official release because I was very dissatisfied with the plugin's performance and the quality of the code. V3 is, hopefully, the last time I will feel the need to remake this plugin, as I'm finally satisfied with the state of the plugin and the overall quality and performance.
 
