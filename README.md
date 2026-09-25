@@ -15,12 +15,34 @@ The plugin also supports the following plugins to add new ways to gain exp:
 |Mythic Mobs|:x: (W.I.P)|
 |ItemsAdder|:x: (W.I.P)|
 
+## :file_folder: Setup:
+The bulk of the setup is done the `levelsystems.yml` file generated after your server boots for the first time. By default, the plugin comes with a generalized default level system that demonstrates how custom level systems are structured. See the Wiki Page for more details on setting up your custom system exactly how you want it.
+
+If you want to give your players rewards for leveling up, this is done in the `milestones.yml` file, where you can setup custom rewards for specific levels. Again, the plugin ships with a default configuration file that should give sufficient examples on how to set up your own rewards, but there is a dedicated Wiki Page that goes into much greater detail if neeeded.
+
+In some cases, you may want players to gain experience for killing mobs, but you might want to make some mobs give more or less exp to the player than others. Configuration for this is done in the `mobs.yml` file. See the Wiki Page for more detail on customizing this file to your liking.
+
 ## 💻 Commands:
-/sl **set** [exp|level] [player] [amount] [system] - Sets the exp or level of a specified player to the specified amount in the specified level system
+|Command|Permission|Description|
+|-------|----------|-----------|
+|/sl **set** [exp/level] [player] [amount] [system] | serverlevels.commands.set | Sets the exp or level of a specified player to the specified amount in the specified level system|
+|/sl **add** [exp/level] [player] [amount] [system]| serverlevels.commands.add |Gives the specified amount of exp or levels to the given player in the specified level system.|
+|/sl **remove** [exp/level] [player] [amount] [system]| serverlevels.commands.remove | Removes the specified amount of exp or levels from the given player in the specified level system.|
+|/slreload | serverlevels.commands.reload |Reloads the plugin, loading changes made in all configs and refreshing the database.|
 
-/sl **add** [exp|level] [player] [amount] [system] - Gives the specified amount of exp or levels to the given player in the specified level system.
+## :ledger: Planned Features:
+- In-game GUI for setting up and customizing Level Systems
+- Support for more plugins (See the table above for current and W.I.P plugins).
+- Customizable chat prefix to display players' levels.
+- EXP bar hijacking to replace the vanilla exp system with your custom one.
+- Indicators to players when they gain exp.
 
-/sl **remove** [exp|level] [player] [amount] [system] - Removes the specified amount of exp or levels from the given player in the specified level system.
-
-/sl **reload** - Reloads the plugin, loading changes made in all configs and refreshing the database connection.
 ## ❓FAQ:
+#### Q: Where does the V3 come from?
+A: This plugin is the 3rd iteration of the Server Levels plugin that I've made. The first version is still available on Spigot on my old account and the GitHub repo is still public on my profile but is archived. V2 Never saw an official release because I was very dissatisfied with the plugin's performance and the quality of the code. V3 is, hopefully, the last time I will feel the need to remake this plugin, as I'm finally satisfied with the state of the plugin and the overall quality and performance.
+
+#### Q: Can you add support for X plugin?
+A: Maybe! Check the table above to see if I'm already working on it or planning to work on it, if its not already in the table then feel free to either go to the Issues tab and open a new issue requesting support for the plugin OR join the Discord server and request it there.
+
+#### Q: Can you bring back the yml file data storage?
+A: I'd really rather not. Using yml files to store the data for each player is incredibly slow compared to databases. If enough people really want yml storage back, then I will bring it back, but the demand will have to be rather large. 
