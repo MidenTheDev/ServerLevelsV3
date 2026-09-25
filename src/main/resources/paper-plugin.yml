@@ -6,12 +6,15 @@ api-version: '26.1.2'
 load: POSTWORLD
 
 permissions:
-  serverlevels.commands.core:
+  serverlevels.commands.set:
     default: op
-    description: Allows usage of server levels commands (required for ANY command)
-  serverlevels.commands.exp:
+    description: Allows usage of server levels exp commands
+  serverlevels.commands.add:
     default: op
-    description: Allows usage of server levels commands (required for ANY command)
-  serverlevels.commands.level:
+    description: Allows usage of server levels level commands
+  serverlevels.commands.remove:
     default: op
-    description: Allows usage of server levels commands (required for ANY command)
+    description: Allows usage of server levels level commands
+  serverlevels.commands.reload:
+    default: op
+    description: Allows usage of server levels level commands

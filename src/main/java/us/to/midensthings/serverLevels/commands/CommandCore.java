@@ -29,6 +29,13 @@ public class CommandCore {
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl set exp [player] [amount] [system]
+
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.set")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -36,7 +43,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 setPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully set "+p.getName()+"'s exp to "+DoubleArgumentType.getDouble(ctx,"expAmount")+" in system "+levelSystem)
                                                         .color(TextColor.color(Color.GREEN.asRGB())));
@@ -48,7 +54,11 @@ public class CommandCore {
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl set level [player] [amount] [system]
-
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.set")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -56,7 +66,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 setPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully set "+p.getName()+"'s level to "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -68,7 +77,11 @@ public class CommandCore {
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl add exp [player] [amount] [system]
-
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.add")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -76,7 +89,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 addPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully gave "+p.getName()+" "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -87,7 +99,11 @@ public class CommandCore {
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl add level [player] [amount] [system]
-
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.add")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -95,7 +111,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 addPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully gave "+p.getName()+" "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -108,7 +123,11 @@ public class CommandCore {
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl remove exp [player] [amount] [system]
 
-
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.remove")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -116,7 +135,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 removePlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully removed "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp from "+p.getName()+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -128,6 +146,12 @@ public class CommandCore {
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
                                                 // sl remove level [player] [amount] [system]
 
+                                                CommandSender sender = ctx.getSource().getSender();
+                                                if (!sender.hasPermission("serverlevels.commands.remove")) {
+                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
@@ -135,7 +159,6 @@ public class CommandCore {
 
                                                 // Command Logic
                                                 removePlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
-                                                CommandSender sender = ctx.getSource().getSender();
                                                 sender.sendMessage(
                                                         Component.text("Successfully removed "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels from "+p.getName()+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -146,7 +169,10 @@ public class CommandCore {
 
     public LiteralCommandNode<CommandSourceStack> reloadCommand = Commands.literal("slreload").executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
-
+                if (!sender.hasPermission("serverlevels.commands.reload")) {
+                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                    return Command.SINGLE_SUCCESS;
+                }
                 sender.sendMessage(Component.text("Reloading Server Levels, server may lag").color(TextColor.color(Color.GREEN.asRGB())));
 
                 plugin.reloadConfig();
