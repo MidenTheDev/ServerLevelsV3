@@ -1,7 +1,7 @@
 # In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
 
-data-format: 'sqlite'
-# Options: sqlite, mysql (more coming eventually)
+data-format: 'h2'
+# Options: h2, sqlite, mysql (more coming eventually)
 
 mysql:
   host: "127.0.0.1:3306"

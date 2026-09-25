@@ -13,14 +13,13 @@ import java.sql.*;
 
 public class DatabaseManager {
 
-    String dataFormat;
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
     YamlConfiguration levelSystemsConf = plugin.getLevelSystemsConf();
     DataSource dataSource;
 
 
 
-    public void setupConnectionPool() {
+    public void setupConnectionPool(String dataFormat) {
         HikariConfig hkconfig = new HikariConfig();
         switch (dataFormat) {
             case ("mysql"):
@@ -37,6 +36,19 @@ public class DatabaseManager {
                 hkconfig.setMaximumPoolSize(10);
                 dataSource = new HikariDataSource(hkconfig);
                 break;
+            case ("h2"):
+                hkconfig.setDriverClassName("org.h2.Driver");
+                hkconfig.setJdbcUrl("jdbc:h2:"+plugin.getDataFolder().getAbsolutePath()+"/database");
+                hkconfig.setMaximumPoolSize(10);
+                dataSource = new HikariDataSource(hkconfig);
+                break;
+            default:
+                // default to h2
+                hkconfig.setDriverClassName("org.h2.Driver");
+                hkconfig.setJdbcUrl("jdbc:h2:plugins/ServerLevels/database");
+                hkconfig.setMaximumPoolSize(10);
+                dataSource = new HikariDataSource(hkconfig);
+                break;
         }
     }
 
@@ -46,9 +58,8 @@ public class DatabaseManager {
         2. Initialize database and database manager accoring to the proper system
             - create Table for every level system
          */
-        dataFormat = plugin.getConfig().getString("data-format");
 
-        setupConnectionPool();
+        setupConnectionPool(plugin.getConfig().getString("data-format"));
 
         // Try to set up database not on main thread.
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -74,9 +85,6 @@ public class DatabaseManager {
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-
-
-
 
         });
 
