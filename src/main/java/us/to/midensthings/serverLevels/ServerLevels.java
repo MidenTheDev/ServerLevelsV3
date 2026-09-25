@@ -48,7 +48,6 @@ public final class ServerLevels extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        databaseManager.closeConnection();
         // Plugin shutdown logic
     }
 

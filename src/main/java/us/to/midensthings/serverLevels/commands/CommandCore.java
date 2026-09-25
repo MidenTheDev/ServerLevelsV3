@@ -148,7 +148,6 @@ public class CommandCore {
                 CommandSender sender = ctx.getSource().getSender();
 
                 sender.sendMessage(Component.text("Reloading Server Levels, server may lag").color(TextColor.color(Color.GREEN.asRGB())));
-                plugin.getDatabaseManager().closeConnection();
 
                 plugin.reloadConfig();
                 plugin.loadConfigs();
