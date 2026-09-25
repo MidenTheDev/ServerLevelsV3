@@ -1,6 +1,7 @@
 package us.to.midensthings.serverLevels.events;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,6 +34,8 @@ public class ExpGainBuiltin implements Listener {
 
         Player p = event.getEntity().getKiller();
 
+        // Player was killed
+        // Nomrally a separate event, but EntityDeathEvent and PlayerDeathEvent both fire when a player dies, so this is required
         if (event.getEntity() instanceof Player) {
             plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
                 if (system.getExpOnPlayerKill() != 0) {
@@ -43,10 +46,24 @@ public class ExpGainBuiltin implements Listener {
             });
             return;
         }
+
+        // Other entity was killed
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
+            // Check if system is using mobkills
+            // TODO: Better means of verification in case someone wants a system that ONLY gives exp for the specific mobs
             if (system.getExpOnMobKill() != 0) {
+                double exp = system.getExpOnMobKill();
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(system.getExpOnMobKill()*(system.getExpGainMultiplier()+1));
+                // Check if the mob is one of the mobs listed for the system in mobs.yml
+                for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
+                    EntityType entityType = EntityType.valueOf(mob);
+                    if (entityType == event.getEntityType()) {
+                        exp = plugin.getMobsConf().getDouble(system.getSystemName()+"."+mob);
+                        break;
+                    }
+                }
+
+                lp.incrementExp(exp*(system.getExpGainMultiplier()+1));
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });

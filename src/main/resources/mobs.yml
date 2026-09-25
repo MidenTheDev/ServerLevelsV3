@@ -1,0 +1,7 @@
+# In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
+
+default:
+  ENDERMAN: 0.1
+  MANNEQUIN: 0.7
+# Customize how much exp each mob grants you per leveling system
+# Mobs not listed use the default number listed in levelsystems.yml
