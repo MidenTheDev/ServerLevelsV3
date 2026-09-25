@@ -7,7 +7,14 @@ Adds a new system for server owners to add their own leveling and progression sy
 ## 💹 Custom Leveling Systems:
 Using this plugin, you can define your own custom leveling systems. This is done in the plugin's levelsystems.yml file, where you can configure the name, how players gain exp, the formula that calculates the amount of exp required for each level, etc etc. There is no limit on the number of systems you can create, and using the plugin's API you can define your own custom methods for gaining exp!
 
-The plugin also natively supports the following plugins to add additional support:
+The plugin also supports the following plugins to add new ways to gain exp:
+|Plugin|Has Support|
+|------|-----------|
+|Project Korra|:x: (W.I.P)|
+|Nouveau Enchanting|:x: (W.I.P)|
+|Mythic Mobs|:x: (W.I.P)|
+|ItemsAdder|:x: (W.I.P)|
+
 ## 💻 Commands:
 /sl **set** [exp|level] [player] [amount] [system] - Sets the exp or level of a specified player to the specified amount in the specified level system
 
