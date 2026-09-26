@@ -1,10 +1,16 @@
 package us.to.midensthings.serverLevels.systems;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.customevents.LevelDownEvent;
 import us.to.midensthings.serverLevels.customevents.LevelUpEvent;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.UUID;
 
 /***
@@ -82,6 +88,17 @@ public class LeveledPlayer {
      */
     public void incrementExp(double expToAdd) {
         this.exp += expToAdd;
+        // Show player the exp gain title
+        LevelSystem ls = getSystem();
+        if (ls.showExpGain()) {
+            DecimalFormat df = new DecimalFormat("##.##");
+            df.setRoundingMode(RoundingMode.DOWN);
+            Player player = Bukkit.getPlayer(uuid);
+            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expToAdd)));
+
+            player.sendActionBar(expGainMsg);
+
+        }
         adjustLevel();
     }
 

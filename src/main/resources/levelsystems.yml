@@ -8,6 +8,8 @@ default:
   max-level: 100
   exp-gain-multiplier: 0.0
   use-milestones: true
+  show-exp-gain: true
+  exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
   exp-gain:
     on-chat: 0.2
     on-mobkill: 0.4

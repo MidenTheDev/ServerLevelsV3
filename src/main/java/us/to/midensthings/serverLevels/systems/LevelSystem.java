@@ -15,38 +15,41 @@ import java.util.List;
 
 public class LevelSystem {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
-    String systemName;
+    private String systemName;
 
     // Whether or not this system sends the player a message when they level up
-    boolean sendMsgOnLevelup;
+    private boolean sendMsgOnLevelup;
     // Whether or not this system uses the milestone system to reward levelups
-    boolean useMilestones;
+    private boolean useMilestones;
 
     // The message to be sent to the player on level up
-    String lvlUpMsg;
+    private String lvlUpMsg;
 
     // Max level of this system
-    int maxLevel;
+    private int maxLevel;
     // Multiplier on exp gains for this system
-    double expGainMultiplier;
+    private double expGainMultiplier;
 
     // EXP required to go from level 0 to level 1;
-    double baseExpRequirement;
+    private double baseExpRequirement;
     // Multiplier for increasing exp requirements per level
-    double expRequirementMultiplier;
+    private double expRequirementMultiplier;
     // ScalarType for how the multiplier is applied to the exp requirements
-    ScalarType scalarType;
+    private ScalarType scalarType;
 
     // Exp gain on event
-    double expOnChat;
-    double expOnMobKill;
-    double expOnPlayerKill;
-    double expOnBlockBreak;
-    double expOnBlockPlace;
+    private double expOnChat;
+    private double expOnMobKill;
+    private double expOnPlayerKill;
+    private double expOnBlockBreak;
+    private double expOnBlockPlace;
 
-    List<Integer> milestones;
+    private boolean showExpGain;
+    private String expGainMsg;
 
-    YamlConfiguration levelSystemConf = plugin.getLevelSystemsConf();
+    private List<Integer> milestones;
+
+    private YamlConfiguration levelSystemConf = plugin.getLevelSystemsConf();
 
     public LevelSystem(String systemName) {
         this.systemName = systemName;
@@ -86,6 +89,9 @@ public class LevelSystem {
         expRequirementMultiplier = levelSystemConf.getDouble(systemName+".exp-requirements.exp-req-multiplier");
 
         scalarType = ScalarType.valueOf(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
+
+        showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
+        expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message");
     }
 
     public void saveToConfig() {
@@ -109,6 +115,9 @@ public class LevelSystem {
         levelSystemConf.set(systemName+".exp-requirements.exp-req-multiplier",expRequirementMultiplier);
 
         levelSystemConf.set(systemName+".exp-requirements.exp-scalar-type",scalarType.toString());
+
+        levelSystemConf.set(systemName+".show-exp-gain",showExpGain);
+        levelSystemConf.set(systemName+".exp-gain-message",expGainMsg);
 
         File levelsystemsYml = new File(plugin.getDataFolder()+"/levelsystems.yml");
         try {
@@ -182,6 +191,25 @@ public class LevelSystem {
 
     // setters and getters
 
+
+    public String getExpGainMsg() {
+        if (expGainMsg == null) {
+            return "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>";
+        }
+        return expGainMsg;
+    }
+
+    public void setExpGainMsg(String expGainMsg) {
+        this.expGainMsg = expGainMsg;
+    }
+
+    public boolean showExpGain() {
+        return showExpGain;
+    }
+
+    public void setShowExpGain(boolean showExpGain) {
+        this.showExpGain = showExpGain;
+    }
 
     public List<Integer> getMilestones() {
         return milestones;
