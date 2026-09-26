@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import us.to.midensthings.serverLevels.commands.CommandCore;
+import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.Registries;
@@ -13,6 +14,8 @@ import us.to.midensthings.serverLevels.events.ExpGainBuiltin;
 import us.to.midensthings.serverLevels.events.PlayerJoin;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public final class ServerLevels extends JavaPlugin {
@@ -34,6 +37,8 @@ public final class ServerLevels extends JavaPlugin {
     private DatabaseManager databaseManager;
     private PluginManager pm;
 
+    public List<String> enabledCompats;
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -51,6 +56,7 @@ public final class ServerLevels extends JavaPlugin {
         registerEvents();
         registerLevelSystems();
         registerCommands();
+        loadCompats();
 
         // For API usage
         new Registries();
@@ -107,6 +113,19 @@ public final class ServerLevels extends JavaPlugin {
             commands.registrar().register(cmdCore.rootCommand, "sl");
             commands.registrar().register(cmdCore.reloadCommand, "slreload");
         });
+    }
+
+    private void loadCompats() {
+        enabledCompats = new ArrayList<>();
+        if (pm.getPlugin("NouveauEnchanting") != null) {
+            logger.info("Enabling NouveauEnchanting Support");
+            enabledCompats.add("NouveauEnchanting");
+            File neYml = new File(this.getDataFolder()+"/Compat/nouveauenchanting.yml");
+            if (!neYml.exists()) {
+                this.saveResource("Compat/nouveauenchanting.yml",false);
+            }
+            pm.registerEvents(new NouveauEnchantingCompatEvents(),this);
+        }
     }
 
     public YamlConfiguration getLevelSystemsConf() {

@@ -1,0 +1,9 @@
+default:
+  exp-gain:
+    on-enchant: 0.4
+  enchantments:
+    sharpness:
+      2: 0.6
+      3: 0.8
+      4: 1.0
+      5: 1.2

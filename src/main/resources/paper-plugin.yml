@@ -5,6 +5,12 @@ main: us.to.midensthings.serverLevels.ServerLevels
 api-version: '26.1.2'
 load: POSTWORLD
 
+dependencies:
+  server:
+    NouveauEnchanting:
+      required: false
+      join-classpath: true
+
 permissions:
   serverlevels.commands.set:
     default: op
