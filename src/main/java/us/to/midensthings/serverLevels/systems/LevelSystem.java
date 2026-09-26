@@ -67,7 +67,7 @@ public class LevelSystem {
             });
         }
 
-        maxLevel = levelSystemConf.getInt(systemName+".max-level");
+        maxLevel = levelSystemConf.getInt(systemName+".max-level", 100);
         expGainMultiplier = levelSystemConf.getDouble(systemName+".exp-gain-multiplier");
 
         expOnChat = levelSystemConf.getDouble(systemName+".exp-gain.on-chat");

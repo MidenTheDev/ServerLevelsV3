@@ -82,7 +82,10 @@ public final class ServerLevels extends JavaPlugin {
     public void registerLevelSystems() {
         levelSystemRegistry = new LevelSystemRegistry();
         levelSystemsConf.getConfigurationSection("").getKeys(false).forEach(system -> {
-            levelSystemRegistry.registerLevelSystem(system);
+            if (levelSystemsConf.getBoolean(system+".enabled",true)) {
+                levelSystemRegistry.registerLevelSystem(system);
+            }
+
         });
     }
 
