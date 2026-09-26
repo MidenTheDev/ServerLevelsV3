@@ -27,6 +27,9 @@ public final class ServerLevels extends JavaPlugin {
     File mobsYml = new File(this.getDataFolder()+"/mobs.yml");
     private YamlConfiguration mobsConf;
 
+    File blocksYml = new File(this.getDataFolder()+"/blocks.yml");
+    private YamlConfiguration blocksConf;
+
     private DatabaseManager databaseManager;
     private PluginManager pm;
 
@@ -69,9 +72,14 @@ public final class ServerLevels extends JavaPlugin {
             logger.info("Creating mobs.yml");
             this.saveResource("mobs.yml", false);
         }
+        if (!blocksYml.exists()) {
+            logger.info("Creating blocks.yml");
+            this.saveResource("blocks.yml", false);
+        }
         levelSystemsConf = YamlConfiguration.loadConfiguration(levelsystemsYml);
         milestonesConf = YamlConfiguration.loadConfiguration(milestonesYml);
         mobsConf = YamlConfiguration.loadConfiguration(mobsYml);
+        blocksConf = YamlConfiguration.loadConfiguration(blocksYml);
     }
 
     private void registerEvents() {
@@ -106,6 +114,8 @@ public final class ServerLevels extends JavaPlugin {
     }
 
     public YamlConfiguration getMobsConf() {return mobsConf;}
+
+    public YamlConfiguration getBlocksConf() {return blocksConf;}
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;

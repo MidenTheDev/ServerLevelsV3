@@ -1,0 +1,15 @@
+# In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
+mining:
+  break:
+    no-silk:
+      DIAMOND_ORE: 1.1
+      DEEPSLATE_DIAMOND_ORE: 1.2
+      DEEPSLATE_EMERALD_ORE: 15.0
+    silk:
+      GRASS_BLOCK: 0.01
+      DIAMOND_ORE: 0.0
+      DEEPSLATE_DIAMOND_ORE: 0.0
+      DEEPSLATE_EMERALD_ORE: 0.0
+  place:
+    RAIL: 0.03
+    POWERED_RAIL: 0.08

@@ -91,24 +91,20 @@ public class DatabaseManager {
 
     }
 
-    public void initializePlayer(Player p) {
+    public void initializePlayer(Player p, String system) {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                     // Create the connection
                     try (Connection connection = dataSource.getConnection()) {
                         // Generate default player stats for each level system.
-                        levelSystemsConf.getConfigurationSection("").getKeys(false).forEach(system -> {
 
-                            String createDefaultStats = "INSERT INTO sys_" + system + " (uuid, exp, level) "
-                                    + "VALUES(?, '0.0', '0')";
-                            try (PreparedStatement pstmt = connection.prepareStatement(createDefaultStats)) {
-                                pstmt.setString(1, p.getUniqueId().toString());
-                                pstmt.execute();
+                        String createDefaultStats = "INSERT INTO sys_" + system + " (uuid, exp, level) "
+                                + "VALUES(?, '0.0', '0')";
+                        try (PreparedStatement pstmt = connection.prepareStatement(createDefaultStats)) {
+                            pstmt.setString(1, p.getUniqueId().toString());
+                            pstmt.execute();
 
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                            }
-                        });
+                        }
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -173,27 +169,26 @@ public class DatabaseManager {
 
     }
 
-    public boolean playerHasRecord(Player p) {
+    public boolean playerHasRecord(Player p, String system) {
         // Get connection
         try (Connection connection = dataSource.getConnection()) {
             // try and find a record for the player for any system.
-            for (String system : levelSystemsConf.getConfigurationSection("").getKeys(false)) {
-                String getFirstRecordWithUUID = "SELECT EXISTS(SELECT 1 FROM sys_" + system + " WHERE uuid = ?)";
 
-                try (PreparedStatement pstmt = connection.prepareStatement(getFirstRecordWithUUID)) {
-                    pstmt.setString(1, p.getUniqueId().toString());
+            String getFirstRecordWithUUID = "SELECT EXISTS(SELECT 1 FROM sys_" + system + " WHERE uuid = ?)";
 
-                    try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs.next()) {
+            try (PreparedStatement pstmt = connection.prepareStatement(getFirstRecordWithUUID)) {
+                pstmt.setString(1, p.getUniqueId().toString());
+
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
                             // SQLite returns 1 for true, 0 for false
-                            if (rs.getInt(1) == 1) {
-                                return true;
-                            }
+                        if (rs.getInt(1) == 1) {
+                            return true;
                         }
                     }
                 }
-
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
