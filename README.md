@@ -35,6 +35,7 @@ In some cases, you may want players to gain experience for killing mobs, but you
 - Support for more plugins (See the table above for current and W.I.P plugins).
 - Customizable chat prefix to display players' levels.
 - EXP bar hijacking to replace the vanilla exp system with your custom one.
+- Folia Support
 
 ## ❓ FAQ:
 #### Q: Where does the V3 come from?
