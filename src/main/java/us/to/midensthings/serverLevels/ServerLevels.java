@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import us.to.midensthings.serverLevels.commands.CommandCore;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
+import us.to.midensthings.serverLevels.data.Registries;
 import us.to.midensthings.serverLevels.events.ExpGainBuiltin;
 import us.to.midensthings.serverLevels.events.PlayerJoin;
 
@@ -50,6 +51,9 @@ public final class ServerLevels extends JavaPlugin {
         registerEvents();
         registerLevelSystems();
         registerCommands();
+
+        // For API usage
+        new Registries();
     }
 
     @Override
