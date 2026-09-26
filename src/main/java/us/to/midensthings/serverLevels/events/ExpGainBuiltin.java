@@ -51,21 +51,19 @@ public class ExpGainBuiltin implements Listener {
 
         // Other entity was killed
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            // Check if system is using mobkills
-            // TODO: Better means of verification in case someone wants a system that ONLY gives exp for the specific mobs
-            if (system.getExpOnMobKill() != 0) {
-                double exp = system.getExpOnMobKill();
-                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                // Check if the mob is one of the mobs listed for the system in mobs.yml
-                for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
-                    EntityType entityType = EntityType.valueOf(mob);
-                    if (entityType == event.getEntityType()) {
-                        exp = plugin.getMobsConf().getDouble(system.getSystemName()+"."+mob);
-                        break;
-                    }
+            // Check if the mob is one of the mobs listed for the system in mobs.yml
+            double expToAdd = system.getExpOnMobKill();
+            for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
+                EntityType entityType = EntityType.valueOf(mob);
+                if (entityType == event.getEntityType()) {
+                    expToAdd = plugin.getMobsConf().getDouble(system.getSystemName()+"."+mob);
+                    break;
                 }
+            }
+            if (expToAdd != 0) {
 
-                lp.incrementExp(exp*(system.getExpGainMultiplier()+1));
+                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
+                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });
@@ -78,41 +76,44 @@ public class ExpGainBuiltin implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            // TODO: Better means of verification in case someone wants a system that ONLY gives exp for the specific blocks
-            if (system.getExpOnBlockBreak() != 0) {
+            double expToAdd = system.getExpOnBlockPlace();
+            Material blockType = event.getBlock().getType();
 
-                Material blockType = event.getBlock().getType();
-                if (p.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.SILK_TOUCH) == 0) {
-                    if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.no-silk") != null) {
-                        for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.no-silk").getKeys(false)) {
-                            Material compBlock = Material.valueOf(block);
-                            if (compBlock == blockType) {
-                                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                                lp.incrementExp(plugin.getBlocksConf().getDouble(system.getSystemName()+".break.no-silk."+block)*(system.getExpGainMultiplier()+1));
-                                plugin.getDatabaseManager().saveLeveledPlayer(lp);
-                                return;
-                            }
+            // Check if player was using silk touch or not
+            if (p.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.SILK_TOUCH) == 0) {
+                // Check if there is a configuration section at all
+                if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.no-silk") != null) {
+                    // Check if the broken block is in the config
+                    for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.no-silk").getKeys(false)) {
+                        Material compBlock = Material.valueOf(block);
+                        if (compBlock == blockType) {
+                            expToAdd = plugin.getBlocksConf().getDouble(system.getSystemName()+".break.no-silk."+block);
                         }
                     }
-                } else {
-                    if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.silk") != null) {
-                        for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.silk").getKeys(false)) {
-                            Material compBlock = Material.valueOf(block);
-                            if (compBlock == blockType) {
-                                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                                lp.incrementExp(plugin.getBlocksConf().getDouble(system.getSystemName()+".break.silk."+block)*(system.getExpGainMultiplier()+1));
-                                plugin.getDatabaseManager().saveLeveledPlayer(lp);
-                                return;
-                            }
-                        }
-                    }
-
                 }
+            } else {
+                // Check if there is a configuration section at all
+                if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.silk") != null) {
+                    // Check if the broken block is in the config
+                    for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".break.silk").getKeys(false)) {
+                        Material compBlock = Material.valueOf(block);
+                        if (compBlock == blockType) {
 
+                            expToAdd = plugin.getBlocksConf().getDouble(system.getSystemName()+".break.silk."+block);
+
+                        }
+                    }
+                }
+            }
+
+
+            if (expToAdd != 0) {
 
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(system.getExpOnBlockBreak()*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
+
+
             }
         });
     }
@@ -121,24 +122,22 @@ public class ExpGainBuiltin implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            // TODO: Better means of verification in case someone wants a system that ONLY gives exp for the specific blocks
-            if (system.getExpOnBlockPlace() != 0) {
-
+            double expToAdd = system.getExpOnBlockPlace();
+            // Check if there is a section for placed blocks for this system in blocks.yml
+            if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".place") != null) {
                 Material blockType = event.getBlock().getType();
-                if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".place") != null) {
-                    for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".place").getKeys(false)) {
-                        Material compBlock = Material.valueOf(block);
-                        if (compBlock == blockType) {
-                            LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                            lp.incrementExp(plugin.getBlocksConf().getDouble(system.getSystemName()+".place."+block)*(system.getExpGainMultiplier()+1));
-                            plugin.getDatabaseManager().saveLeveledPlayer(lp);
-                            return;
-                        }
+                // Check if the placed block is in the config
+                for(String block : plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".place").getKeys(false)) {
+                    Material compBlock = Material.valueOf(block);
+                    if (compBlock == blockType) {
+                        expToAdd = plugin.getBlocksConf().getDouble(system.getSystemName()+".place."+block);
                     }
                 }
+            }
 
+            if (expToAdd != 0) {
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(system.getExpOnBlockPlace()*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });
