@@ -59,12 +59,18 @@ public class LevelSystem {
 
         useMilestones = levelSystemConf.getBoolean(systemName+".use-milestones");
         if (useMilestones) {
-            // setup milestones
             YamlConfiguration milestoneConf = plugin.getMilestonesConf();
-            milestones = new ArrayList<>();
-            milestoneConf.getConfigurationSection(systemName).getKeys(false).forEach(milestone -> {
-                milestones.add(Integer.parseInt(milestone));
-            });
+            if (milestoneConf.getConfigurationSection(systemName) != null)  {
+                // setup milestones
+
+                milestones = new ArrayList<>();
+                milestoneConf.getConfigurationSection(systemName).getKeys(false).forEach(milestone -> {
+                    milestones.add(Integer.parseInt(milestone));
+                });
+            } else {
+                plugin.getLogger().warning("Level System " + systemName + " has milestones enabled but doesn't have any milestones in milestones.yml!");
+            }
+
         }
 
         maxLevel = levelSystemConf.getInt(systemName+".max-level", 100);
