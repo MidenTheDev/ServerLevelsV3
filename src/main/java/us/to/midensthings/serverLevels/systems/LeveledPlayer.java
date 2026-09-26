@@ -94,7 +94,7 @@ public class LeveledPlayer {
             DecimalFormat df = new DecimalFormat("##.##");
             df.setRoundingMode(RoundingMode.DOWN);
             Player player = Bukkit.getPlayer(uuid);
-            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expToAdd)));
+            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expToAdd)).replace("%system%",system));
 
             player.sendActionBar(expGainMsg);
 
