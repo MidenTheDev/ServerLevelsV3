@@ -10,9 +10,9 @@ Using this plugin, you can define your own custom leveling systems. This is done
 The plugin also supports the following plugins to add new ways to gain exp:
 |Plugin|Has Support|
 |------|-----------|
-|Project Korra|❌ (W.I.P)|
-|Nouveau Enchanting|❌ (W.I.P)|
-|Mythic Mobs|❌ (W.I.P)|
+|Project Korra|✅|
+|Nouveau Enchanting|✅|
+|Mythic Mobs|✅|
 |ItemsAdder|❌ (W.I.P)|
 
 ## 📁 Setup:
