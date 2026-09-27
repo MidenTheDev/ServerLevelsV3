@@ -23,6 +23,9 @@ public class MythicMobsCompat {
     public boolean isMythicMob(Entity entity) {
         return MythicBukkit.inst().getMobManager().isMythicMob(entity);
     }
+    public boolean isMythicMob(String mobName) {
+        return MythicBukkit.inst().getMobManager().getMobTypes().contains(mobName);
+    }
 
     public String getMobName(Entity entity) {
         Optional<ActiveMob> optActiveMob = MythicBukkit.inst().getMobManager().getActiveMob(entity.getUniqueId());

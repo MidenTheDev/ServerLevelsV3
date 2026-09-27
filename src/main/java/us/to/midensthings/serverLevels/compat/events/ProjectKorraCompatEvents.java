@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
 import java.io.File;
@@ -66,13 +67,33 @@ public class ProjectKorraCompatEvents implements Listener {
 
                 // Check if there is a specific amount of exp to gain for this mob
                 if (pkConf.getConfigurationSection(levelSystem.getSystemName()+".kill-mobs") != null) {
-                    for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".kill-mobs").getKeys(false)) {
-                        EntityType entityType = event.getEntity().getType();
-                        if (entityType == EntityType.valueOf(mob)) {
-                            expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".kill-mobs."+mob);
-                            break;
+
+                    boolean isCustomEntity = false;
+                    // Check for mythicmobs specifications first
+                    if (plugin.enabledCompats.contains("MythicMobs")) {
+                        MythicMobsCompat mmComp = new MythicMobsCompat();
+                        if (mmComp.isMythicMob(event.getEntity())) {
+                            isCustomEntity = true;
+                            for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".kill-mobs").getKeys(false)) {
+                                if (mmComp.getMobName(event.getEntity()).equals(mob)) {
+                                    expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".kill-mobs."+mob);
+                                    break;
+                                }
+                            }
                         }
                     }
+
+                    // If it's not a custom entity, do vanilla method
+                    if (!isCustomEntity) {
+                        for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".kill-mobs").getKeys(false)) {
+                            EntityType entityType = event.getEntity().getType();
+                            if (entityType == EntityType.valueOf(mob)) {
+                                expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".kill-mobs."+mob);
+                                break;
+                            }
+                        }
+                    }
+
                 }
 
                 if (expFromAbility != 0 || expFromMob != 0) {
@@ -143,13 +164,33 @@ public class ProjectKorraCompatEvents implements Listener {
 
                 // Check if there is a specific amount of exp to gain for this mob
                 if (pkConf.getConfigurationSection(levelSystem.getSystemName()+".damage-mobs") != null) {
-                    for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".damage-mobs").getKeys(false)) {
-                        EntityType entityType = event.getEntity().getType();
-                        if (entityType == EntityType.valueOf(mob)) {
-                            expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".damage-mobs."+mob);
-                            break;
+
+                    boolean isCustomEntity = false;
+                    // Check for mythicmobs specifications first
+                    if (plugin.enabledCompats.contains("MythicMobs")) {
+                        MythicMobsCompat mmComp = new MythicMobsCompat();
+                        if (mmComp.isMythicMob(event.getEntity())) {
+                            isCustomEntity = true;
+                            for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".damage-mobs").getKeys(false)) {
+                                if (mmComp.getMobName(event.getEntity()).equals(mob)) {
+                                    expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".damage-mobs."+mob);
+                                    break;
+                                }
+                            }
                         }
                     }
+
+                    // if its not a custom entity, do vanilla method
+                    if (!isCustomEntity) {
+                        for (String mob : pkConf.getConfigurationSection(levelSystem.getSystemName()+".damage-mobs").getKeys(false)) {
+                            EntityType entityType = event.getEntity().getType();
+                            if (entityType == EntityType.valueOf(mob)) {
+                                expFromMob = pkConf.getDouble(levelSystem.getSystemName()+".damage-mobs."+mob);
+                                break;
+                            }
+                        }
+                    }
+
                 }
 
                 if (expFromAbility != 0 || expFromMob != 0) {
