@@ -1,0 +1,4 @@
+default:
+  on-mobkill: 0.1
+  mobs:
+    SkeletalKnight: 1.2

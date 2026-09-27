@@ -13,6 +13,9 @@ dependencies:
     ProjectKorra:
       required: false
       join-classpath: true
+    MythicMobs:
+      required: false
+      join-classpath: true
 
 permissions:
   serverlevels.commands.set:

@@ -11,6 +11,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
 public class ExpGainBuiltin implements Listener {
@@ -53,7 +54,25 @@ public class ExpGainBuiltin implements Listener {
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             // Check if the mob is one of the mobs listed for the system in mobs.yml
             double expToAdd = system.getExpOnMobKill();
-            if (plugin.getMobsConf().getConfigurationSection(system.getSystemName()) != null) {
+
+            if (plugin.enabledCompats.contains("MythicMobs")) {
+                MythicMobsCompat mmComp = new MythicMobsCompat();
+                if (mmComp.isMythicMob(event.getEntity())) {
+                    if (mmComp.getConfig().getConfigurationSection(system.getSystemName()) != null) {
+                        expToAdd = mmComp.getConfig().getDouble(system.getSystemName()+".on-mobkill");
+                        if (mmComp.getConfig().getConfigurationSection(system.getSystemName()+".mobs") != null) {
+                            String mobName = mmComp.getMobName(event.getEntity());
+                            plugin.getLogger().warning(mobName);
+                            for (String mob : mmComp.getConfig().getConfigurationSection(system.getSystemName()+".mobs").getKeys(false)) {
+                                if (mobName.equals(mob)) {
+                                    expToAdd = mmComp.getConfig().getDouble(system.getSystemName()+".mobs."+mob);
+                                }
+                            }
+                        }
+                    }
+
+                }
+            } else if (plugin.getMobsConf().getConfigurationSection(system.getSystemName()) != null) {
                 for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
                     EntityType entityType = EntityType.valueOf(mob);
                     if (entityType == event.getEntityType()) {
@@ -62,6 +81,8 @@ public class ExpGainBuiltin implements Listener {
                     }
                 }
             }
+
+
 
             if (expToAdd != 0) {
 

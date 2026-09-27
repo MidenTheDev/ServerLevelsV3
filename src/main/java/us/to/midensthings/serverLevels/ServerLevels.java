@@ -139,6 +139,16 @@ public final class ServerLevels extends JavaPlugin {
             }
             pm.registerEvents(new ProjectKorraCompatEvents(),this);
         }
+
+        // Mythic Mobs
+        if (pm.getPlugin("MythicMobs") != null) {
+            logger.info("Enabling MythicMobs Support");
+            enabledCompats.add("MythicMobs");
+            File pkYml = new File(this.getDataFolder()+"/Compat/mythicmobs.yml");
+            if (!pkYml.exists()) {
+                this.saveResource("Compat/mythicmobs.yml",false);
+            }
+        }
     }
 
     public YamlConfiguration getLevelSystemsConf() {
