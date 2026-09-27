@@ -10,6 +10,9 @@ dependencies:
     NouveauEnchanting:
       required: false
       join-classpath: true
+    ProjectKorra:
+      required: false
+      join-classpath: true
 
 permissions:
   serverlevels.commands.set:

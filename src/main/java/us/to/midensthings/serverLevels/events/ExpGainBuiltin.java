@@ -53,13 +53,16 @@ public class ExpGainBuiltin implements Listener {
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             // Check if the mob is one of the mobs listed for the system in mobs.yml
             double expToAdd = system.getExpOnMobKill();
-            for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
-                EntityType entityType = EntityType.valueOf(mob);
-                if (entityType == event.getEntityType()) {
-                    expToAdd = plugin.getMobsConf().getDouble(system.getSystemName()+"."+mob);
-                    break;
+            if (plugin.getMobsConf().getConfigurationSection(system.getSystemName()) != null) {
+                for (String mob : plugin.getMobsConf().getConfigurationSection(system.getSystemName()).getKeys(false)) {
+                    EntityType entityType = EntityType.valueOf(mob);
+                    if (entityType == event.getEntityType()) {
+                        expToAdd = plugin.getMobsConf().getDouble(system.getSystemName()+"."+mob);
+                        break;
+                    }
                 }
             }
+
             if (expToAdd != 0) {
 
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());

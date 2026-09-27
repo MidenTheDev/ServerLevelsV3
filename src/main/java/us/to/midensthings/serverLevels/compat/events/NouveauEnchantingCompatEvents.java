@@ -22,7 +22,6 @@ public class NouveauEnchantingCompatEvents implements Listener {
     @EventHandler
     public void onEnchant(PlayerEnchantEvent event) {
         neConf = YamlConfiguration.loadConfiguration(neYml);
-
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             // Start with default exp amount
             double expToAdd = neConf.getDouble(system.getSystemName()+".exp-gain.on-enchant");

@@ -1,0 +1,33 @@
+default:
+  exp-gain:
+    bending-kill-player: 0.8
+    bending-kill-mob: 0.6
+    bending-damage-player: 0.04
+    bending-damage-mob: 0.02
+    bending-use-ability: 0.1
+
+  abilities-use:
+    EarthSmash: 1.0
+    Lightning: 2.0
+    AvatarState: 2.0
+
+  abilities-kill-player:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  abilities-kill-mob:
+    EarthSmash: 0.1
+    Lightning: 0.4
+
+  abilities-damage-player:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  abilities-damage-mob:
+    EarthSmash: 0.1
+    Lightning: 0.4
+
+  kill-mobs:
+    ENDERMAN: 0.1
+    MANNEQUIN: 0.7
+  damage-mobs:
+    ENDERMAN: 0.1
+    MANNEQUIN: 0.1

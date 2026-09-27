@@ -18,6 +18,8 @@ import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
+import java.util.List;
+
 public class CommandCore {
 
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
@@ -182,9 +184,11 @@ public class CommandCore {
 
                 plugin.getLevelSystemRegistry().clearRegistry();
                 plugin.registerLevelSystems();
+
                 sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
                 return Command.SINGLE_SUCCESS;
             }).build();
+
 
     private void setPlayerExp(Player p, double newExp, String levelSystem) {
         LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);

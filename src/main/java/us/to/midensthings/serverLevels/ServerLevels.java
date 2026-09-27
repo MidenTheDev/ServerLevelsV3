@@ -7,6 +7,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import us.to.midensthings.serverLevels.commands.CommandCore;
 import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
+import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.Registries;
@@ -117,6 +118,7 @@ public final class ServerLevels extends JavaPlugin {
 
     private void loadCompats() {
         enabledCompats = new ArrayList<>();
+        // Nouveau Enchanting
         if (pm.getPlugin("NouveauEnchanting") != null) {
             logger.info("Enabling NouveauEnchanting Support");
             enabledCompats.add("NouveauEnchanting");
@@ -125,6 +127,17 @@ public final class ServerLevels extends JavaPlugin {
                 this.saveResource("Compat/nouveauenchanting.yml",false);
             }
             pm.registerEvents(new NouveauEnchantingCompatEvents(),this);
+        }
+
+        // Project Korra
+        if (pm.getPlugin("ProjectKorra") != null) {
+            logger.info("Enabling ProjectKorra Support");
+            enabledCompats.add("ProjectKorra");
+            File pkYml = new File(this.getDataFolder()+"/Compat/projectkorra.yml");
+            if (!pkYml.exists()) {
+                this.saveResource("Compat/projectkorra.yml",false);
+            }
+            pm.registerEvents(new ProjectKorraCompatEvents(),this);
         }
     }
 
