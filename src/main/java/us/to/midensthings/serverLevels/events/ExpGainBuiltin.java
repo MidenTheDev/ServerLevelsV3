@@ -22,9 +22,12 @@ public class ExpGainBuiltin implements Listener {
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             if (system.getExpOnChat() != 0) {
-                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getPlayer(),system.getSystemName());
-                lp.incrementExp(system.getExpOnChat()*(system.getExpGainMultiplier()+1));
-                plugin.getDatabaseManager().saveLeveledPlayer(lp);
+                if (plugin.getDatabaseManager().playerHasRecord(event.getPlayer(),system.getSystemName())) {
+                    LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getPlayer(),system.getSystemName());
+                    lp.incrementExp(system.getExpOnChat()*(system.getExpGainMultiplier()+1));
+                    plugin.getDatabaseManager().saveLeveledPlayer(lp);
+                }
+
             }
         });
     }
@@ -41,20 +44,28 @@ public class ExpGainBuiltin implements Listener {
         // Nomrally a separate event, but EntityDeathEvent and PlayerDeathEvent both fire when a player dies, so this is required
         if (event.getEntity() instanceof Player) {
             plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-                if (system.getExpOnPlayerKill() != 0) {
-                    LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                    lp.incrementExp(system.getExpOnPlayerKill()*(system.getExpGainMultiplier()+1));
-                    plugin.getDatabaseManager().saveLeveledPlayer(lp);
+                if (plugin.getDatabaseManager().playerHasRecord(p,system.getSystemName())) {
+                    if (system.getExpOnPlayerKill() != 0) {
+                        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
+                        lp.incrementExp(system.getExpOnPlayerKill()*(system.getExpGainMultiplier()+1));
+                        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+                    }
                 }
+
             });
             return;
         }
 
         // Other entity was killed
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            // Check if the mob is one of the mobs listed for the system in mobs.yml
+
+            // Check first if the playe is in the system
+            if (!(plugin.getDatabaseManager().playerHasRecord(p,system.getSystemName()))) {
+                return;
+            }
             double expToAdd = system.getExpOnMobKill();
 
+            // Check if the mob is one of the mobs listed for the system in mobs.yml
             if (plugin.enabledCompats.contains("MythicMobs")) {
                 MythicMobsCompat mmComp = new MythicMobsCompat();
                 if (mmComp.isMythicMob(event.getEntity())) {
@@ -100,6 +111,11 @@ public class ExpGainBuiltin implements Listener {
     public void onBlockBreak(BlockBreakEvent event) {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
+
+            if (!(plugin.getDatabaseManager().playerHasRecord(p,system.getSystemName()))) {
+                return;
+            }
+
             double expToAdd = system.getExpOnBlockPlace();
             Material blockType = event.getBlock().getType();
 
@@ -146,6 +162,11 @@ public class ExpGainBuiltin implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
+
+            if (!(plugin.getDatabaseManager().playerHasRecord(p,system.getSystemName()))) {
+                return;
+            }
+
             double expToAdd = system.getExpOnBlockPlace();
             // Check if there is a section for placed blocks for this system in blocks.yml
             if (plugin.getBlocksConf().getConfigurationSection(system.getSystemName()+".place") != null) {

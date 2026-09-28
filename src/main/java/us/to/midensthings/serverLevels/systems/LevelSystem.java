@@ -45,6 +45,7 @@ public class LevelSystem {
     private double expOnBlockPlace;
 
     private boolean showExpGain;
+    private boolean autoAddPlayers;
     private String expGainMsg;
 
     private List<Integer> milestones;
@@ -88,6 +89,8 @@ public class LevelSystem {
         baseExpRequirement = levelSystemConf.getDouble(systemName+".exp-requirements.base-exp-req");
         expRequirementMultiplier = levelSystemConf.getDouble(systemName+".exp-requirements.exp-req-multiplier");
 
+        autoAddPlayers = levelSystemConf.getBoolean(systemName+".auto-add-players");
+
         scalarType = ScalarType.valueOf(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
 
         showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
@@ -125,6 +128,14 @@ public class LevelSystem {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean doAutoAddPlayers() {
+        return autoAddPlayers;
+    }
+
+    public void setAutoAddPlayers(boolean autoAddPlayers) {
+        this.autoAddPlayers = autoAddPlayers;
     }
 
     public double getExpRequirement(int level) {

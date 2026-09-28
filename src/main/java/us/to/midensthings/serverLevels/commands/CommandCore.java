@@ -41,7 +41,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 setPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
@@ -64,7 +66,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 setPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
@@ -87,7 +91,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 addPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
@@ -109,7 +115,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 addPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
@@ -133,7 +141,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 removePlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
@@ -157,7 +167,9 @@ public class CommandCore {
                                                 Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
-                                                checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
 
                                                 // Command Logic
                                                 removePlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
@@ -167,6 +179,50 @@ public class CommandCore {
 
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
+            .then(Commands.literal("addSystem")
+                    .then(Commands.argument("player",StringArgumentType.word())
+                            .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
+                                // Verify permissions first
+                                CommandSender sender = ctx.getSource().getSender();
+                                if (!sender.hasPermission("serverlevels.commands.addsystem")) {
+                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                    return Command.SINGLE_SUCCESS;
+                                }
+
+                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+
+                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                    return Command.SINGLE_SUCCESS;
+                                }
+
+                                plugin.getDatabaseManager().initializePlayer(p,levelSystem);
+
+                                sender.sendMessage(Component.text("Successfully added player to system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
+                                return Command.SINGLE_SUCCESS;
+                            }))))
+            .then(Commands.literal("removeSystem")
+                    .then(Commands.argument("player",StringArgumentType.word())
+                            .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
+                                // Verify permissions first
+                                CommandSender sender = ctx.getSource().getSender();
+                                if (!sender.hasPermission("serverlevels.commands.removesystem")) {
+                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                    return Command.SINGLE_SUCCESS;
+                                }
+
+                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+
+                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                    return Command.SINGLE_SUCCESS;
+                                }
+
+                                plugin.getDatabaseManager().removePlayer(p,levelSystem);
+
+                                sender.sendMessage(Component.text("Successfully removed player from system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
+                                return Command.SINGLE_SUCCESS;
+                            }))))
             .build();
 
     public LiteralCommandNode<CommandSourceStack> reloadCommand = Commands.literal("slreload").executes(ctx -> {

@@ -10,6 +10,7 @@ default:
   use-milestones: true
   show-exp-gain: true
   exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
+  auto-add-players: true
   exp-gain:
     on-chat: 0.2
     on-mobkill: 0.4
@@ -32,6 +33,7 @@ mining:
   max-level: 20
   exp-gain-multiplier: 0.0
   use-milestones: true
+  auto-add-players: false
   exp-gain:
     on-chat: 0.0
     on-mobkill: 0.0

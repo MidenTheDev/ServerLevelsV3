@@ -1,8 +1,6 @@
 package us.to.midensthings.serverLevels.compat.events;
 
-import com.projectkorra.projectkorra.event.AbilityDamageEntityEvent;
-import com.projectkorra.projectkorra.event.AbilityEndEvent;
-import com.projectkorra.projectkorra.event.EntityBendingDeathEvent;
+import com.projectkorra.projectkorra.event.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -30,6 +28,11 @@ public class ProjectKorraCompatEvents implements Listener {
         if (event.getEntity() instanceof Player) {
             // player death
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+
+                if (!(plugin.getDatabaseManager().playerHasRecord(event.getAbility().getPlayer(), levelSystem.getSystemName()))) {
+                    return;
+                }
+
                 // default exp
                 double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-kill-player");
 
@@ -52,6 +55,11 @@ public class ProjectKorraCompatEvents implements Listener {
         } else {
             // not player death
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+
+                if (!(plugin.getDatabaseManager().playerHasRecord(event.getAbility().getPlayer(), levelSystem.getSystemName()))) {
+                    return;
+                }
+
                 // default exp
                 double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-kill-mob");
                 double expFromMob = 0;
@@ -126,6 +134,9 @@ public class ProjectKorraCompatEvents implements Listener {
         if (event.getEntity() instanceof Player) {
             // player death
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                if (!(plugin.getDatabaseManager().playerHasRecord(event.getAbility().getPlayer(), levelSystem.getSystemName()))) {
+                    return;
+                }
                 // default exp
                 double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-kill-player");
 
@@ -148,6 +159,11 @@ public class ProjectKorraCompatEvents implements Listener {
         } else {
             // not player death
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+
+                if (!(plugin.getDatabaseManager().playerHasRecord(event.getAbility().getPlayer(), levelSystem.getSystemName()))) {
+                    return;
+                }
+
                 // default exp
                 double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-damage-mob");
                 double expFromMob = 0;
@@ -206,17 +222,26 @@ public class ProjectKorraCompatEvents implements Listener {
 
     // Ability used
     @EventHandler
-    public void onAbilityUsed(AbilityEndEvent event) {
+    public void onAbilityUsed(PlayerCooldownChangeEvent event) {
         pkConf = YamlConfiguration.loadConfiguration(pkYml);
 
+        if (event.getResult() != PlayerCooldownChangeEvent.Result.ADDED) {
+            return;
+        }
+
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+
+            if (!(plugin.getDatabaseManager().playerHasRecord(event.getPlayer().getPlayer(), levelSystem.getSystemName()))) {
+                return;
+            }
+
             // default exp
             double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-use-ability");
-
+            plugin.getLogger().warning(event.getAbility());
             // Check if there is a specific amount of exp to gain for this ability
             if (pkConf.getConfigurationSection(levelSystem.getSystemName()+".abilities-use") != null) {
                 for (String ability : pkConf.getConfigurationSection(levelSystem.getSystemName()+".abilities-use").getKeys(false)) {
-                    if (event.getAbility().getName().equalsIgnoreCase(ability)) {
+                    if (event.getAbility().equalsIgnoreCase(ability)) {
 
                         expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".abilities-use."+ability);
                     }
@@ -224,7 +249,7 @@ public class ProjectKorraCompatEvents implements Listener {
             }
 
             if (expFromAbility != 0) {
-                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getAbility().getPlayer(), levelSystem.getSystemName());
+                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer((Player) event.getPlayer(), levelSystem.getSystemName());
                 lp.incrementExp(expFromAbility*(levelSystem.getExpGainMultiplier()+1));
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }

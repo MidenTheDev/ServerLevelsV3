@@ -18,15 +18,21 @@ dependencies:
       join-classpath: true
 
 permissions:
+  serverlevels.commands.addsystem:
+    default: op
+    description: Allows usage of server levels addSystem command
+  serverlevels.commands.removesystem:
+    default: op
+    description: Allows usage of server levels removeSystem command
   serverlevels.commands.set:
     default: op
-    description: Allows usage of server levels exp commands
+    description: Allows usage of server levels set commands
   serverlevels.commands.add:
     default: op
-    description: Allows usage of server levels level commands
+    description: Allows usage of server levels add commands
   serverlevels.commands.remove:
     default: op
-    description: Allows usage of server levels level commands
+    description: Allows usage of server levels remove commands
   serverlevels.commands.reload:
     default: op
-    description: Allows usage of server levels level commands
+    description: Allows usage of server levels reload command

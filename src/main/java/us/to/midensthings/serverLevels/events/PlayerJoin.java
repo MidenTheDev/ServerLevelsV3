@@ -14,8 +14,10 @@ public class PlayerJoin implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-            if (!plugin.getDatabaseManager().playerHasRecord(p,levelSystem.getSystemName())) {
-                plugin.getDatabaseManager().initializePlayer(p,levelSystem.getSystemName());
+            if (levelSystem.doAutoAddPlayers()) {
+                if (!plugin.getDatabaseManager().playerHasRecord(p,levelSystem.getSystemName())) {
+                    plugin.getDatabaseManager().initializePlayer(p,levelSystem.getSystemName());
+                }
             }
         });
 
