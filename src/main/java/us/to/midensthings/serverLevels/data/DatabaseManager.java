@@ -18,12 +18,11 @@ public class DatabaseManager {
     DataSource dataSource;
 
 
-
     public void setupConnectionPool(String dataFormat) {
         HikariConfig hkconfig = new HikariConfig();
         switch (dataFormat) {
             case ("mysql"):
-                hkconfig.setJdbcUrl("jdbc:mysql://"+plugin.getConfig().getString("mysql.host")+"/"+plugin.getConfig().getString("mysql.database")); // Address of your running MySQL database
+                hkconfig.setJdbcUrl("jdbc:mysql://" + plugin.getConfig().getString("mysql.host") + "/" + plugin.getConfig().getString("mysql.database")); // Address of your running MySQL database
                 hkconfig.setUsername(plugin.getConfig().getString("mysql.username")); // Username
                 hkconfig.setPassword(plugin.getConfig().getString("mysql.password")); // Password
                 hkconfig.setMaximumPoolSize(10); // Pool size defaults to 10
@@ -38,7 +37,7 @@ public class DatabaseManager {
                 break;
             case ("h2"):
                 hkconfig.setDriverClassName("org.h2.Driver");
-                hkconfig.setJdbcUrl("jdbc:h2:"+plugin.getDataFolder().getAbsolutePath()+"/database");
+                hkconfig.setJdbcUrl("jdbc:h2:" + plugin.getDataFolder().getAbsolutePath() + "/database");
                 hkconfig.setMaximumPoolSize(10);
                 dataSource = new HikariDataSource(hkconfig);
                 break;
@@ -69,7 +68,7 @@ public class DatabaseManager {
                 levelSystemsConf.getConfigurationSection("").getKeys(false).forEach(system -> {
 
                     // Each table holds a player's uuid, their current exp, and their current level in its records.
-                    String createTable = "CREATE TABLE IF NOT EXISTS sys_"+system+" ( "
+                    String createTable = "CREATE TABLE IF NOT EXISTS sys_" + system + " ( "
                             + "uuid CHAR(36) PRIMARY KEY, "
                             + "exp DOUBLE, "
                             + "level INT);";
@@ -94,20 +93,20 @@ public class DatabaseManager {
     public void initializePlayer(Player p, String system) {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                    // Create the connection
-                    try (Connection connection = dataSource.getConnection()) {
-                        // Generate default player stats for each level system.
+            // Create the connection
+            try (Connection connection = dataSource.getConnection()) {
+                // Generate default player stats for each level system.
 
-                        String createDefaultStats = "INSERT INTO sys_" + system + " (uuid, exp, level) "
-                                + "VALUES(?, '0.0', '0')";
-                        try (PreparedStatement pstmt = connection.prepareStatement(createDefaultStats)) {
-                            pstmt.setString(1, p.getUniqueId().toString());
-                            pstmt.execute();
+                String createDefaultStats = "INSERT INTO sys_" + system + " (uuid, exp, level) "
+                        + "VALUES(?, '0.0', '0')";
+                try (PreparedStatement pstmt = connection.prepareStatement(createDefaultStats)) {
+                    pstmt.setString(1, p.getUniqueId().toString());
+                    pstmt.execute();
 
-                        }
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         });
 
     }
@@ -124,16 +123,15 @@ public class DatabaseManager {
         try (Connection connection = dataSource.getConnection()) {
 
             // select player all data from the table according to player's uuid
-            String selectPlayerData = "SELECT uuid,exp,level FROM sys_"+system+" WHERE uuid=?";
-            try(PreparedStatement pstmt = connection.prepareStatement(selectPlayerData)) {
+            String selectPlayerData = "SELECT uuid,exp,level FROM sys_" + system + " WHERE uuid=?";
+            try (PreparedStatement pstmt = connection.prepareStatement(selectPlayerData)) {
                 pstmt.setString(1, p.getUniqueId().toString());
                 try (ResultSet resultSet = pstmt.executeQuery()) {
                     resultSet.next();
                     lp = new LeveledPlayer(system,
-                                resultSet.getString("uuid"),
-                                resultSet.getDouble("exp"),
-                                resultSet.getInt("level"));
-
+                            resultSet.getString("uuid"),
+                            resultSet.getDouble("exp"),
+                            resultSet.getInt("level"));
 
 
                 }
@@ -143,7 +141,7 @@ public class DatabaseManager {
             e.printStackTrace();
         }
 
-    return lp;
+        return lp;
     }
 
     public void saveLeveledPlayer(LeveledPlayer lp) {
@@ -154,9 +152,9 @@ public class DatabaseManager {
                 String system = lp.getSystemName();
 
                 // select player all data from the table according to player's uuid
-                String selectTestValues = "UPDATE sys_"+system+" SET exp=?, level=? WHERE uuid=?";
-                try(PreparedStatement pstmt = connection.prepareStatement(selectTestValues)) {
-                    pstmt.setDouble(1,lp.getExp());
+                String selectTestValues = "UPDATE sys_" + system + " SET exp=?, level=? WHERE uuid=?";
+                try (PreparedStatement pstmt = connection.prepareStatement(selectTestValues)) {
+                    pstmt.setDouble(1, lp.getExp());
                     pstmt.setInt(2, lp.getLevel());
                     pstmt.setString(3, lp.getUuid().toString());
                     pstmt.executeUpdate();
@@ -181,7 +179,7 @@ public class DatabaseManager {
 
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
-                            // SQLite returns 1 for true, 0 for false
+                        // SQLite returns 1 for true, 0 for false
                         if (rs.getInt(1) == 1) {
                             return true;
                         }
@@ -196,5 +194,22 @@ public class DatabaseManager {
     }
 
 
+    public void removePlayer(Player p, String levelSystem) {
+        // Get connection
+        try (Connection connection = dataSource.getConnection()) {
+            // try and find a record for the player for any system.
 
+            String deleteRecord = "DELETE FROM sys_" + levelSystem + " WHERE uuid = ?";
+
+            try (PreparedStatement pstmt = connection.prepareStatement(deleteRecord)) {
+                pstmt.setString(1, p.getUniqueId().toString());
+
+                pstmt.executeUpdate();
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
