@@ -237,7 +237,6 @@ public class ProjectKorraCompatEvents implements Listener {
 
             // default exp
             double expFromAbility = pkConf.getDouble(levelSystem.getSystemName()+".exp-gain.bending-use-ability");
-            plugin.getLogger().warning(event.getAbility());
             // Check if there is a specific amount of exp to gain for this ability
             if (pkConf.getConfigurationSection(levelSystem.getSystemName()+".abilities-use") != null) {
                 for (String ability : pkConf.getConfigurationSection(levelSystem.getSystemName()+".abilities-use").getKeys(false)) {
