@@ -1,6 +1,25 @@
 # Server Levels
-![GitHub Release](https://img.shields.io/github/v/release/MidenTheDev/ServerLevelsV3)![GitHub Pre-Release](https://img.shields.io/github/v/release/MidenTheDev/ServerLevelsV3?include_prereleases)
-![Static Badge](https://img.shields.io/badge/Requires%20Version%2026.1.2%2B-00BF3F?style=flat) ![Static Badge](https://img.shields.io/badge/Requires%20Paper-BF5600?style=flat&link=https%3A%2F%2Fpapermc.io%2Fdownloads%2Fpaper)
+<div align=center>
+
+[<img src="https://github.com/iuriineves/modding-badges/blob/main/Available%20on%20Modrinth.png?raw=true" width="200"/>]([https://modrinth.com/](https://modrinth.com/plugin/server-levels))
+[<img src="https://github.com/iuriineves/modding-badges/blob/main/Source%20on%20GitHub.png?raw=true" width="200"/>]([https://github.com/iuriineves/Neves-Capybaras](https://github.com/MidenTheDev/ServerLevelsV3))
+[<img src="https://raw.githubusercontent.com/MidenTheDev/NouveauEnchantingV2/refs/heads/master/page_resources/RequiresPaper.png" width="162"/>](https://papermc.io)
+[<img src="https://github.com/iuriineves/modding-badges/blob/main/Support%20me%20on%20Ko-Fi.png?raw=true" width="236"/>](https://ko-fi.com/miden)
+
+</div>
+
+<div align=center>
+  
+![GitHub Release](https://img.shields.io/github/v/release/MidenTheDev/ServerLevelsV3?style=for-the-badge&label=Latest%20Release&color=00B324&link=https%3A%2F%2Fmodrinth.com%2Fplugin%2Fserver-levels%2Fversions)
+![GitHub Release](https://img.shields.io/github/v/release/MidenTheDev/ServerLevelsV3?style=for-the-badge&label=Latest%20Pre-Release&color=D98300&link=https%3A%2F%2Fmodrinth.com%2Fplugin%2Fserver-levels%2Fversions)
+![Static Badge](https://img.shields.io/badge/Requires%20Version-26.1%2B-GREEN?style=for-the-badge)
+
+</div>
+
+
+
+
+
 
 Adds a new system for server owners to add their own leveling and progression systems completely separate from Minecraft's existing leveling system.
 
