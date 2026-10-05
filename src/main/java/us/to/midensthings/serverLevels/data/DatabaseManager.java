@@ -44,7 +44,7 @@ public class DatabaseManager {
             default:
                 // default to h2
                 hkconfig.setDriverClassName("org.h2.Driver");
-                hkconfig.setJdbcUrl("jdbc:h2:plugins/ServerLevels/database");
+                hkconfig.setJdbcUrl("jdbc:h2:" + plugin.getDataFolder().getAbsolutePath() + "/database");
                 hkconfig.setMaximumPoolSize(10);
                 dataSource = new HikariDataSource(hkconfig);
                 break;
