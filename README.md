@@ -28,6 +28,8 @@ In some cases, you may want players to gain experience for killing mobs, but you
 |/sl **set** [exp/level] [player] [amount] [system] | serverlevels.commands.set | Sets the exp or level of a specified player to the specified amount in the specified level system|
 |/sl **add** [exp/level] [player] [amount] [system]| serverlevels.commands.add |Gives the specified amount of exp or levels to the given player in the specified level system.|
 |/sl **remove** [exp/level] [player] [amount] [system]| serverlevels.commands.remove | Removes the specified amount of exp or levels from the given player in the specified level system.|
+|/sl **addSystem** [player] [system] | serverlevels.commands.addsystem | Adds the player to the specified system (if they aren't already in it).|
+|/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | removes the player from the specified system, deleting their progress|
 |/slreload | serverlevels.commands.reload |Reloads the plugin, loading changes made in all configs and refreshing the database.|
 
 ## 📒 Planned Features:
