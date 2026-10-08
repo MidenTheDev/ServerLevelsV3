@@ -8,6 +8,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
+import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
@@ -27,9 +29,15 @@ public class CommandCore {
     public LiteralCommandNode<CommandSourceStack> rootCommand = Commands.literal("sl")
             .then(Commands.literal("set")
                     .then(Commands.literal("exp")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    })
+                                                    .executes(ctx -> {
                                                 // sl set exp [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
@@ -38,7 +46,8 @@ public class CommandCore {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
 
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -54,16 +63,22 @@ public class CommandCore {
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("level")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    }).executes(ctx -> {
                                                 // sl set level [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.set")) {
                                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -79,16 +94,22 @@ public class CommandCore {
                                             }))))))
             .then(Commands.literal("add")
                     .then(Commands.literal("exp")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    }).executes(ctx -> {
                                                 // sl add exp [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.add")) {
                                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -103,16 +124,22 @@ public class CommandCore {
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("level")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    }).executes(ctx -> {
                                                 // sl add level [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.add")) {
                                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -128,9 +155,14 @@ public class CommandCore {
                                             }))))))
             .then(Commands.literal("remove")
                     .then(Commands.literal("exp")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    }).executes(ctx -> {
                                                 // sl remove exp [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
@@ -138,7 +170,8 @@ public class CommandCore {
                                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -153,9 +186,14 @@ public class CommandCore {
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("level")
-                            .then(Commands.argument("player", StringArgumentType.word())
+                            .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).executes(ctx -> {
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    }).executes(ctx -> {
                                                 // sl remove level [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
@@ -164,7 +202,8 @@ public class CommandCore {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
 
-                                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -180,7 +219,7 @@ public class CommandCore {
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
             .then(Commands.literal("addSystem")
-                    .then(Commands.argument("player",StringArgumentType.word())
+                    .then(Commands.argument("player", ArgumentTypes.player())
                             .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
                                 // Verify permissions first
                                 CommandSender sender = ctx.getSource().getSender();
@@ -188,8 +227,8 @@ public class CommandCore {
                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
                                     return Command.SINGLE_SUCCESS;
                                 }
-
-                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
@@ -202,7 +241,7 @@ public class CommandCore {
                                 return Command.SINGLE_SUCCESS;
                             }))))
             .then(Commands.literal("removeSystem")
-                    .then(Commands.argument("player",StringArgumentType.word())
+                    .then(Commands.argument("player",ArgumentTypes.player())
                             .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
                                 // Verify permissions first
                                 CommandSender sender = ctx.getSource().getSender();
@@ -211,7 +250,8 @@ public class CommandCore {
                                     return Command.SINGLE_SUCCESS;
                                 }
 
-                                Player p = Bukkit.getPlayer(StringArgumentType.getString(ctx, "player"));
+                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                Player p = resolver.resolve(ctx.getSource()).getFirst();
                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
 
                                 if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
