@@ -15,4 +15,7 @@ debug-mode: false
 # Then, report the bug on discord and/or github.
 # You can report bugs without this, but the debug entries make my life easier.
 
+check-for-updates: true
+# Checks Modrinth on startup and logs a message if a newer release is available.
+
 config-version: 2.0

@@ -13,6 +13,7 @@ import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.Registries;
 import us.to.midensthings.serverLevels.events.ExpGainBuiltin;
 import us.to.midensthings.serverLevels.events.PlayerJoin;
+import us.to.midensthings.serverLevels.util.UpdateTracker;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public final class ServerLevels extends JavaPlugin {
 
     private DatabaseManager databaseManager;
     private PluginManager pm;
+    private UpdateTracker updateTracker;
 
     public List<String> enabledCompats;
 
@@ -61,6 +63,11 @@ public final class ServerLevels extends JavaPlugin {
 
         // For API usage
         new Registries();
+
+        updateTracker = new UpdateTracker();
+        if (getConfig().getBoolean("check-for-updates", true)) {
+            updateTracker.checkForUpdates();
+        }
     }
 
     @Override
@@ -169,5 +176,9 @@ public final class ServerLevels extends JavaPlugin {
 
     public LevelSystemRegistry getLevelSystemRegistry() {
         return levelSystemRegistry;
+    }
+
+    public UpdateTracker getUpdateTracker() {
+        return updateTracker;
     }
 }
