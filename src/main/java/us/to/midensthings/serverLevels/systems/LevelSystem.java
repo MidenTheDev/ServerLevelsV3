@@ -174,7 +174,9 @@ public class LevelSystem {
 
     public void sendLevelupMessage(Player p, int level) {
         // Support MiniMessage formatting for colors by using MiniMessage API
-        p.sendMessage(MiniMessage.miniMessage().deserialize(lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level))));
+        if (this.sendMsgOnLevelup && lvlUpMsg != null) {
+            p.sendMessage(MiniMessage.miniMessage().deserialize(lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level))));
+        }
     }
 
     public LeveledPlayer generateLeveledPlayer(Player p) {
