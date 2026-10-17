@@ -337,7 +337,7 @@ public class CommandCore {
     }
 
     private boolean checkValidCommand(CommandContext<CommandSourceStack> ctx,Player p, LevelSystem ls) {
-        if (p == null || !p.hasPlayedBefore()) {
+        if (p == null) {
             // Player hasn't been on server before, won't be in database.
             ctx.getSource().getSender().sendMessage(Component.text("Invalid Player!").color(TextColor.color(Color.RED.asRGB())));
             return false;
