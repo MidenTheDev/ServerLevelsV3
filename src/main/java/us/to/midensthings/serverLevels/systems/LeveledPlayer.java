@@ -39,6 +39,7 @@ public class LeveledPlayer {
         this.uuid = uuid;
         this.exp = exp;
         this.level = level;
+        this.expMultiplier = expMultiplier;
     }
 
     public LeveledPlayer(String system, String uuid, double exp, int level, double expMultiplier) {
@@ -46,6 +47,7 @@ public class LeveledPlayer {
         this.uuid = UUID.fromString(uuid);
         this.exp = exp;
         this.level = level;
+        this.expMultiplier = expMultiplier;
     }
 
 

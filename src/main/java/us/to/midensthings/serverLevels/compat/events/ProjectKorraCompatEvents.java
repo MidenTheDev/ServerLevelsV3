@@ -47,7 +47,7 @@ public class ProjectKorraCompatEvents implements Listener {
 
                 if (expFromAbility != 0) {
                     LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getAttacker(), levelSystem.getSystemName());
-                    lp.incrementExp(expFromAbility*(levelSystem.getExpGainMultiplier()+1));
+                    lp.incrementExp(expFromAbility);
                     plugin.getDatabaseManager().saveLeveledPlayer(lp);
                 }
             });
@@ -107,7 +107,7 @@ public class ProjectKorraCompatEvents implements Listener {
                 if (expFromAbility != 0 || expFromMob != 0) {
                     double expToAdd = expFromAbility + expFromMob;
                     LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getAttacker(), levelSystem.getSystemName());
-                    lp.incrementExp(expToAdd*(levelSystem.getExpGainMultiplier()+1));
+                    lp.incrementExp(expToAdd);
                     plugin.getDatabaseManager().saveLeveledPlayer(lp);
                 }
             });
@@ -151,7 +151,7 @@ public class ProjectKorraCompatEvents implements Listener {
 
                 if (expFromAbility != 0) {
                     LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getSource(), levelSystem.getSystemName());
-                    lp.incrementExp(expFromAbility*(levelSystem.getExpGainMultiplier()+1));
+                    lp.incrementExp(expFromAbility);
                     plugin.getDatabaseManager().saveLeveledPlayer(lp);
                 }
             });
@@ -212,7 +212,7 @@ public class ProjectKorraCompatEvents implements Listener {
                 if (expFromAbility != 0 || expFromMob != 0) {
                     double expToAdd = expFromAbility + expFromMob;
                     LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getSource(), levelSystem.getSystemName());
-                    lp.incrementExp(expToAdd*(levelSystem.getExpGainMultiplier()+1));
+                    lp.incrementExp(expToAdd);
                     plugin.getDatabaseManager().saveLeveledPlayer(lp);
                 }
             });
@@ -249,7 +249,7 @@ public class ProjectKorraCompatEvents implements Listener {
 
             if (expFromAbility != 0) {
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer((Player) event.getPlayer(), levelSystem.getSystemName());
-                lp.incrementExp(expFromAbility*(levelSystem.getExpGainMultiplier()+1));
+                lp.incrementExp(expFromAbility);
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });

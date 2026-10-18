@@ -24,7 +24,7 @@ public class ExpGainBuiltin implements Listener {
             if (system.getExpOnChat() != 0) {
                 if (plugin.getDatabaseManager().playerHasRecord(event.getPlayer(),system.getSystemName())) {
                     LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getPlayer(),system.getSystemName());
-                    lp.incrementExp(system.getExpOnChat()*(system.getExpGainMultiplier()+1));
+                    lp.incrementExp(system.getExpOnChat());
                     plugin.getDatabaseManager().saveLeveledPlayer(lp);
                 }
 
@@ -47,7 +47,7 @@ public class ExpGainBuiltin implements Listener {
                 if (plugin.getDatabaseManager().playerHasRecord(p,system.getSystemName())) {
                     if (system.getExpOnPlayerKill() != 0) {
                         LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                        lp.incrementExp(system.getExpOnPlayerKill()*(system.getExpGainMultiplier()+1));
+                        lp.incrementExp(system.getExpOnPlayerKill());
                         plugin.getDatabaseManager().saveLeveledPlayer(lp);
                     }
                 }
@@ -98,7 +98,7 @@ public class ExpGainBuiltin implements Listener {
             if (expToAdd != 0) {
 
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd);
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });
@@ -150,7 +150,7 @@ public class ExpGainBuiltin implements Listener {
             if (expToAdd != 0) {
 
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd);
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
 
 
@@ -182,7 +182,7 @@ public class ExpGainBuiltin implements Listener {
 
             if (expToAdd != 0) {
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p,system.getSystemName());
-                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd);
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });

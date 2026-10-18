@@ -50,7 +50,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
             if (expToAdd != 0) {
 
                 LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getPlayer(), system.getSystemName());
-                lp.incrementExp(expToAdd*(system.getExpGainMultiplier()+1));
+                lp.incrementExp(expToAdd);
                 plugin.getDatabaseManager().saveLeveledPlayer(lp);
             }
         });
