@@ -62,8 +62,6 @@ public class DatabaseManager {
 
         setupConnectionPool(plugin.getConfig().getString("data-format"));
 
-        // Try to set up database not on main thread.
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             // Create the connection
             try (Connection connection = dataSource.getConnection()) {
                 // Generate a table for every level system.
@@ -87,7 +85,6 @@ public class DatabaseManager {
                 e.printStackTrace();
             }
 
-        });
 
 
     }
