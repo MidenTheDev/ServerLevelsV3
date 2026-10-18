@@ -61,12 +61,11 @@ public class LevelSystem {
         }
 
         useMilestones = levelSystemConf.getBoolean(systemName+".use-milestones");
+        milestones = new ArrayList<>();
         if (useMilestones) {
             YamlConfiguration milestoneConf = plugin.getMilestonesConf();
             if (milestoneConf.getConfigurationSection(systemName) != null)  {
                 // setup milestones
-
-                milestones = new ArrayList<>();
                 milestoneConf.getConfigurationSection(systemName).getKeys(false).forEach(milestone -> {
                     milestones.add(Integer.parseInt(milestone));
                 });
