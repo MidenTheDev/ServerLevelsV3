@@ -1,12 +1,11 @@
 package us.to.midensthings.serverLevels.systems;
 
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
 
 import java.io.File;
 import java.io.IOException;
@@ -198,6 +197,12 @@ public class LevelSystem {
         }
         for(String command : commands) {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(),command.replace("%player%",p.getName()));
+        }
+
+        if (plugin.enabledCompats.contains("LuckPerms")) {
+            List<String> perms = milestoneConf.getStringList(systemName+"."+level+".permissions");
+            LuckPermsCompat lpComp = new LuckPermsCompat();
+            lpComp.addPermissions(p,perms);
         }
     }
 

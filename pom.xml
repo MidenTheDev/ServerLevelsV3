@@ -65,6 +65,7 @@
             <id>jitpack.io</id>
             <url>https://www.jitpack.io</url>
         </repository>
+
     </repositories>
 
     <dependencies>
@@ -102,6 +103,11 @@
             <version>5.12.1</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>net.luckperms</groupId>
+            <artifactId>api</artifactId>
+            <version>5.5</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

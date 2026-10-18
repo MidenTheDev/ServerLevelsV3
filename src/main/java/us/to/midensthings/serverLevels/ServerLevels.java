@@ -155,6 +155,12 @@ public final class ServerLevels extends JavaPlugin {
                 this.saveResource("Compat/mythicmobs.yml",false);
             }
         }
+
+        // Luckperms
+        if (pm.getPlugin("LuckPerms") != null) {
+            logger.info("Enabling LuckPerms support");
+            enabledCompats.add("LuckPerms");
+        }
     }
 
     public YamlConfiguration getLevelSystemsConf() {
