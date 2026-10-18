@@ -124,8 +124,11 @@ public class LeveledPlayer {
             while (exp < expForCurrentLevel) {
                 // decrease level
                 level--;
-                LevelDownEvent levelDownEvent = new LevelDownEvent(this);
-                levelDownEvent.callEvent();
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    LevelDownEvent levelDownEvent = new LevelDownEvent(this);
+                    levelDownEvent.callEvent();
+                });
+
 
                 // update exp requirement to reflect new level
                 expForCurrentLevel = ls.getExpRequirement(level-1);
@@ -139,8 +142,11 @@ public class LeveledPlayer {
                 // increase level
                 level++;
                 ls.sendLevelupMessage(Bukkit.getPlayer(uuid),level);
-                LevelUpEvent levelUpEvent = new LevelUpEvent(this);
-                levelUpEvent.callEvent();
+                // Call event on main thread
+                Bukkit.getScheduler().runTask(plugin,() -> {
+                    LevelUpEvent levelUpEvent = new LevelUpEvent(this);
+                    levelUpEvent.callEvent();
+                });
                 ls.runMilestone(level, Bukkit.getPlayer(uuid));
 
                 // update the exp requirement to reflect new level
