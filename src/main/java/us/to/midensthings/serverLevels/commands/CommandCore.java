@@ -307,9 +307,7 @@ public class CommandCore {
                         p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,DoubleArgumentType.getDouble(ctx,"multiplier"));
                         return Command.SINGLE_SUCCESS;
             })))
-            .build();
-
-    public LiteralCommandNode<CommandSourceStack> reloadCommand = Commands.literal("slreload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
+            .then(Commands.literal("reload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
 
                 sender.sendMessage(Component.text("Reloading Server Levels, server may lag").color(TextColor.color(Color.GREEN.asRGB())));
@@ -324,7 +322,10 @@ public class CommandCore {
 
                 sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
                 return Command.SINGLE_SUCCESS;
-            }).build();
+            }))
+            .build();
+
+
 
 
     private void setPlayerExp(Player p, double newExp, String levelSystem) {

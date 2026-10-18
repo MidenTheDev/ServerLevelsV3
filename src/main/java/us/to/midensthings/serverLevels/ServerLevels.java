@@ -119,7 +119,6 @@ public final class ServerLevels extends JavaPlugin {
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
             CommandCore cmdCore = new CommandCore();
             commands.registrar().register(cmdCore.rootCommand, "sl");
-            commands.registrar().register(cmdCore.reloadCommand, "slreload");
         });
     }
 
