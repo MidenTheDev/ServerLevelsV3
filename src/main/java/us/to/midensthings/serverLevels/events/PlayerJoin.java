@@ -15,9 +15,8 @@ public class PlayerJoin implements Listener {
         Player p = event.getPlayer();
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
             if (levelSystem.doAutoAddPlayers()) {
-                if (!plugin.getDatabaseManager().playerHasRecord(p,levelSystem.getSystemName())) {
-                    plugin.getDatabaseManager().initializePlayer(p,levelSystem.getSystemName());
-                }
+                // initializePlayer does nothing if the player already has a record, so there's no need to check first
+                plugin.getDatabaseManager().initializePlayer(p,levelSystem.getSystemName());
             }
         });
 

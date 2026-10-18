@@ -2,15 +2,17 @@ package us.to.midensthings.serverLevels.systems;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class LevelSystem {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
@@ -48,6 +50,12 @@ public class LevelSystem {
     private String expGainMsg;
 
     private List<Integer> milestones;
+
+    // Per mob/block exp overrides from mobs.yml and blocks.yml, parsed once at load
+    private Map<EntityType, Double> mobKillExp;
+    private Map<Material, Double> blockBreakExp;
+    private Map<Material, Double> blockBreakSilkExp;
+    private Map<Material, Double> blockPlaceExp;
 
     private YamlConfiguration levelSystemConf = plugin.getLevelSystemsConf();
 
@@ -93,6 +101,28 @@ public class LevelSystem {
 
         showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
         expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message");
+
+        mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "mobs.yml");
+        blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "blocks.yml");
+        blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "blocks.yml");
+        blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "blocks.yml");
+    }
+
+    // Reads a section of enum names to exp values, warning about (and skipping) names that don't exist
+    private <E extends Enum<E>> Map<E, Double> loadExpOverrides(YamlConfiguration conf, String path, Class<E> type, String fileName) {
+        Map<E, Double> overrides = new EnumMap<>(type);
+        ConfigurationSection section = conf.getConfigurationSection(path);
+        if (section == null) {
+            return overrides;
+        }
+        for (String key : section.getKeys(false)) {
+            try {
+                overrides.put(Enum.valueOf(type, key.toUpperCase()), section.getDouble(key));
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Unknown " + type.getSimpleName() + " '" + key + "' in " + fileName + " at " + path + ", skipping it");
+            }
+        }
+        return overrides;
     }
 
     public void saveToConfig() {
@@ -161,7 +191,8 @@ public class LevelSystem {
             }
         } else {
             // assume linear
-            for (int calcLevel = 0;calcLevel<level;calcLevel++) {
+            // <= so the cost of the current level is included, matching the exponential formula
+            for (int calcLevel = 0;calcLevel<=level;calcLevel++) {
                 expLevelReq = calcLevel * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement;
                 expReq += expLevelReq;
             }
@@ -172,17 +203,17 @@ public class LevelSystem {
 
     public void sendLevelupMessage(Player p, int level) {
         // Support MiniMessage formatting for colors by using MiniMessage API
-        if (this.sendMsgOnLevelup && lvlUpMsg != null) {
+        if (p != null && this.sendMsgOnLevelup && lvlUpMsg != null) {
             p.sendMessage(MiniMessage.miniMessage().deserialize(lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level))));
         }
     }
 
-    public LeveledPlayer generateLeveledPlayer(Player p) {
-        return plugin.getDatabaseManager().getLeveledPlayer(p, systemName);
+    public LeveledPlayer getLeveledPlayer(Player p) {
+        return LeveledPlayer.fromPlayer(p,this.systemName);
     }
 
     public void runMilestone(int level, Player p) {
-        if (!milestones.contains(level)) {
+        if (p == null || !milestones.contains(level)) {
             // No milestones found
             return;
         }
@@ -312,11 +343,11 @@ public class LevelSystem {
         this.expOnChat = expOnChat;
     }
 
-    public double getExpOnMobKill() {
+    public double getDefaultExpOnMobKill() {
         return expOnMobKill;
     }
 
-    public void setExpOnMobKill(double expOnMobKill) {
+    public void setDefaultExpOnMobKill(double expOnMobKill) {
         this.expOnMobKill = expOnMobKill;
     }
 
@@ -338,6 +369,27 @@ public class LevelSystem {
 
     public double getExpOnBlockPlace() {
         return expOnBlockPlace;
+    }
+
+    /***
+     * @return the exp for killing this mob type from mobs.yml, or the system's default mob kill exp
+     */
+    public double getMobKillExp(EntityType entityType) {
+        return mobKillExp.getOrDefault(entityType, expOnMobKill);
+    }
+
+    /***
+     * @return the exp for breaking this block from blocks.yml, or the system's default block break exp
+     */
+    public double getBlockBreakExp(Material block, boolean silkTouch) {
+        return (silkTouch ? blockBreakSilkExp : blockBreakExp).getOrDefault(block, expOnBlockBreak);
+    }
+
+    /***
+     * @return the exp for placing this block from blocks.yml, or the system's default block place exp
+     */
+    public double getBlockPlaceExp(Material block) {
+        return blockPlaceExp.getOrDefault(block, expOnBlockPlace);
     }
 
     public void setExpOnBlockPlace(double expOnBlockPlace) {

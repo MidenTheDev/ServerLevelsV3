@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import us.to.midensthings.serverLevels.commands.CommandCore;
+import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
 import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
@@ -22,7 +23,8 @@ import java.util.logging.Logger;
 
 public final class ServerLevels extends JavaPlugin {
     Logger logger = this.getLogger();
-    LevelSystemRegistry levelSystemRegistry;
+    // volatile since it's replaced on reload and read from other threads
+    private volatile LevelSystemRegistry levelSystemRegistry;
 
     File levelsystemsYml = new File(this.getDataFolder()+"/levelsystems.yml");
     private YamlConfiguration levelSystemsConf;
@@ -40,7 +42,11 @@ public final class ServerLevels extends JavaPlugin {
     private PluginManager pm;
     private UpdateTracker updateTracker;
 
-    public List<String> enabledCompats;
+    public List<String> enabledCompats = new ArrayList<>();
+
+    private NouveauEnchantingCompatEvents nouveauEnchantingCompatEvents;
+    private ProjectKorraCompatEvents projectKorraCompatEvents;
+    private MythicMobsCompat mythicMobsCompat;
 
     @Override
     public void onEnable() {
@@ -73,6 +79,10 @@ public final class ServerLevels extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        // databaseManager is null if startup failed before it was created
+        if (this.databaseManager != null) {
+            this.databaseManager.closeHikariConnections();
+        }
     }
 
 
@@ -106,13 +116,34 @@ public final class ServerLevels extends JavaPlugin {
     }
 
     public void registerLevelSystems() {
-        levelSystemRegistry = new LevelSystemRegistry();
+        // Build the new registry fully before swapping it in, so nothing ever sees a half filled registry
+        LevelSystemRegistry newRegistry = new LevelSystemRegistry();
         levelSystemsConf.getConfigurationSection("").getKeys(false).forEach(system -> {
+            if (!LevelSystemRegistry.isValidSystemName(system)) {
+                logger.warning("Level system '" + system + "' has an invalid name and will not be loaded. Names can only contain letters, numbers, and underscores");
+                return;
+            }
             if (levelSystemsConf.getBoolean(system+".enabled",true)) {
-                levelSystemRegistry.registerLevelSystem(system);
+                newRegistry.registerLevelSystem(system);
             }
 
         });
+        levelSystemRegistry = newRegistry;
+    }
+
+    /***
+     * Reloads the config files of all enabled compatibilities
+     */
+    public void reloadCompatConfigs() {
+        if (nouveauEnchantingCompatEvents != null) {
+            nouveauEnchantingCompatEvents.reloadConfig();
+        }
+        if (projectKorraCompatEvents != null) {
+            projectKorraCompatEvents.reloadConfig();
+        }
+        if (mythicMobsCompat != null) {
+            mythicMobsCompat.reloadConfig();
+        }
     }
 
     private void registerCommands() {
@@ -123,7 +154,7 @@ public final class ServerLevels extends JavaPlugin {
     }
 
     private void loadCompats() {
-        enabledCompats = new ArrayList<>();
+        enabledCompats.clear();
         // Nouveau Enchanting
         if (pm.getPlugin("NouveauEnchanting") != null) {
             logger.info("Enabling NouveauEnchanting Support");
@@ -132,7 +163,8 @@ public final class ServerLevels extends JavaPlugin {
             if (!neYml.exists()) {
                 this.saveResource("Compat/nouveauenchanting.yml",false);
             }
-            pm.registerEvents(new NouveauEnchantingCompatEvents(),this);
+            nouveauEnchantingCompatEvents = new NouveauEnchantingCompatEvents();
+            pm.registerEvents(nouveauEnchantingCompatEvents,this);
         }
 
         // Project Korra
@@ -143,7 +175,8 @@ public final class ServerLevels extends JavaPlugin {
             if (!pkYml.exists()) {
                 this.saveResource("Compat/projectkorra.yml",false);
             }
-            pm.registerEvents(new ProjectKorraCompatEvents(),this);
+            projectKorraCompatEvents = new ProjectKorraCompatEvents();
+            pm.registerEvents(projectKorraCompatEvents,this);
         }
 
         // Mythic Mobs
@@ -154,6 +187,7 @@ public final class ServerLevels extends JavaPlugin {
             if (!pkYml.exists()) {
                 this.saveResource("Compat/mythicmobs.yml",false);
             }
+            mythicMobsCompat = new MythicMobsCompat();
         }
 
         // Luckperms
@@ -181,6 +215,13 @@ public final class ServerLevels extends JavaPlugin {
 
     public LevelSystemRegistry getLevelSystemRegistry() {
         return levelSystemRegistry;
+    }
+
+    /***
+     * @return the MythicMobs compatibility, or null if MythicMobs isn't installed
+     */
+    public MythicMobsCompat getMythicMobsCompat() {
+        return mythicMobsCompat;
     }
 
     public UpdateTracker getUpdateTracker() {

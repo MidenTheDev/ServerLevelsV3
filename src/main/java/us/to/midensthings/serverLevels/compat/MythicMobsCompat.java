@@ -1,15 +1,11 @@
 package us.to.midensthings.serverLevels.compat;
 
-import io.lumine.mythic.api.adapters.AbstractEntity;
-import io.lumine.mythic.api.mobs.MythicMob;
 import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import us.to.midensthings.serverLevels.ServerLevels;
 
 import java.io.File;
-import java.util.Optional;
 
 public class MythicMobsCompat {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
@@ -17,6 +13,10 @@ public class MythicMobsCompat {
     private YamlConfiguration mmConf;
 
     public MythicMobsCompat() {
+        reloadConfig();
+    }
+
+    public void reloadConfig() {
         mmConf = YamlConfiguration.loadConfiguration(mmYml);
     }
 
@@ -27,9 +27,13 @@ public class MythicMobsCompat {
         return MythicBukkit.inst().getMobManager().getMobTypes().contains(mobName);
     }
 
+    /***
+     * @return the internal MythicMobs name of the entity, or null if it isn't an active mythic mob
+     */
     public String getMobName(Entity entity) {
-        Optional<ActiveMob> optActiveMob = MythicBukkit.inst().getMobManager().getActiveMob(entity.getUniqueId());
-        return optActiveMob.get().getType().getInternalName();
+        return MythicBukkit.inst().getMobManager().getActiveMob(entity.getUniqueId())
+                .map(activeMob -> activeMob.getType().getInternalName())
+                .orElse(null);
     }
 
     public YamlConfiguration getConfig() {

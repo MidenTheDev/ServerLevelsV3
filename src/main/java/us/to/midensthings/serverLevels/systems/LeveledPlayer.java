@@ -19,7 +19,7 @@ import java.util.UUID;
  Represents the data of a player from a specified level system
  */
 public class LeveledPlayer {
-    private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
+    private static final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
 
     // The level system the player data belongs to
     String system;
@@ -66,13 +66,21 @@ public class LeveledPlayer {
         return uuid;
     }
 
+    public static LeveledPlayer fromPlayer(Player p, String levelSYstem) {
+        return plugin.getDatabaseManager().getLeveledPlayer(p,levelSYstem);
+    }
 
     public int getLevel() {
         return level;
     }
 
+    /***
+     * Sets the leveled player's level, kept between 0 and the system's max level.
+     * Does NOT adjust exp. Use LeveledPlayer.adjustExp()
+     * @param level
+     */
     public void setLevel(int level) {
-        this.level = level;
+        this.level = Math.clamp(level, 0, getSystem().getMaxLevel());
     }
 
     public double getExp() {
@@ -118,17 +126,19 @@ public class LeveledPlayer {
      */
     public void incrementExp(double expToAdd) {
         LevelSystem ls = getSystem();
-        this.exp += (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
+        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
+        this.exp += expGained;
         // Check if exp is under zero, and if it is, set it to zero
         if (exp <= 0) {
             exp = 0;
         }
         // Show player the exp gain title
-        if (ls.showExpGain()) {
+        Player player = getPlayer();
+        if (ls.showExpGain() && player != null) {
             DecimalFormat df = new DecimalFormat("##.##");
             df.setRoundingMode(RoundingMode.DOWN);
-            Player player = Bukkit.getPlayer(uuid);
-            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expToAdd)).replace("%system%",system));
+            // Show the exp actually gained after multipliers
+            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expGained)).replace("%system%",system));
 
             player.sendActionBar(expGainMsg);
 
@@ -137,9 +147,19 @@ public class LeveledPlayer {
     }
 
     /***
+     * Decreases the player's exp by the given value, without exp multipliers.
+     * Exp will not go below zero. Triggers level downs. Does NOT save to database.
+     * @param expToRemove
+     */
+    public void decrementExp(double expToRemove) {
+        this.exp = Math.max(0, this.exp - expToRemove);
+        adjustLevel();
+    }
+
+    /***
      * Saves the current player data to the plugin's database
      */
-    public void saveToDatabase() {
+    public void save() {
         plugin.getDatabaseManager().saveLeveledPlayer(this);
     }
 
@@ -149,20 +169,20 @@ public class LeveledPlayer {
      */
     public void adjustLevel() {
         LevelSystem ls = getSystem();
-
+        // Negative exp would otherwise make the level down loop below run forever
+        if (exp < 0) {
+            exp = 0;
+        }
         // check if level was DECREASED
         double expForCurrentLevel = ls.getExpRequirement(level-1);
         if (exp < expForCurrentLevel) {
 
             // While the player has less exp than was required for their current level.
-            while (exp < expForCurrentLevel) {
+            while (level > 0 && exp < expForCurrentLevel) {
                 // decrease level
                 level--;
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    LevelDownEvent levelDownEvent = new LevelDownEvent(this);
-                    levelDownEvent.callEvent();
-                });
-
+                LevelDownEvent levelDownEvent = new LevelDownEvent(this, level);
+                runOnMainThread(levelDownEvent::callEvent);
 
                 // update exp requirement to reflect new level
                 expForCurrentLevel = ls.getExpRequirement(level-1);
@@ -171,17 +191,16 @@ public class LeveledPlayer {
             // Player must have more exp than required for their current level, check if they have enough to level up
             double expToNextLevel = ls.getExpRequirement(level);
 
-            // While the player has more or equal exp than is required for the next level
-            while (exp >= expToNextLevel) {
+            // While the player has more or equal exp than is required for the next level, up to the max level
+            while (level < ls.getMaxLevel() && exp >= expToNextLevel) {
                 // increase level
                 level++;
-                ls.sendLevelupMessage(Bukkit.getPlayer(uuid),level);
-                // Call event on main thread
-                Bukkit.getScheduler().runTask(plugin,() -> {
-                    LevelUpEvent levelUpEvent = new LevelUpEvent(this);
-                    levelUpEvent.callEvent();
-                });
-                ls.runMilestone(level, Bukkit.getPlayer(uuid));
+                int newLevel = level;
+                ls.sendLevelupMessage(getPlayer(),newLevel);
+                LevelUpEvent levelUpEvent = new LevelUpEvent(this, newLevel);
+                runOnMainThread(levelUpEvent::callEvent);
+                // Milestones dispatch commands, which must happen on the main thread
+                runOnMainThread(() -> ls.runMilestone(newLevel, getPlayer()));
 
                 // update the exp requirement to reflect new level
                 expToNextLevel = ls.getExpRequirement(level);
@@ -190,6 +209,15 @@ public class LeveledPlayer {
 
 
 
+    }
+
+    // Runs immediately when already on the main thread, otherwise schedules it for the next tick
+    private void runOnMainThread(Runnable task) {
+        if (Bukkit.isPrimaryThread()) {
+            task.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
     }
 
 

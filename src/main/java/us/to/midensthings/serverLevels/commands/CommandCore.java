@@ -29,7 +29,7 @@ public class CommandCore {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
 
     public LiteralCommandNode<CommandSourceStack> rootCommand = Commands.literal("sl")
-            .then(Commands.literal("set")
+            .then(Commands.literal("set").requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
                     .then(Commands.literal("exp")
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
@@ -42,7 +42,7 @@ public class CommandCore {
                                                         return builder.buildFuture();
                                                     })
 
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
+
 
                                                     .executes(ctx -> {
                                                 // sl set exp [player] [amount] [system]
@@ -57,7 +57,9 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                setPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
+                                                if (!setPlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully set "+p.getName()+"'s exp to "+DoubleArgumentType.getDouble(ctx,"expAmount")+" in system "+levelSystem)
                                                         .color(TextColor.color(Color.GREEN.asRGB())));
@@ -73,7 +75,7 @@ public class CommandCore {
                                                 });
                                                 return builder.buildFuture();
                                                     })
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
+
 
                                                     .executes(ctx -> {
                                                 // sl set level [player] [amount] [system]
@@ -88,13 +90,15 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                setPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
+                                                if (!setPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully set "+p.getName()+"'s level to "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
-            .then(Commands.literal("add")
+            .then(Commands.literal("add").requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
                     .then(Commands.literal("exp")
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
@@ -105,7 +109,7 @@ public class CommandCore {
                                                 return builder.buildFuture();
                                                     })
 
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
+
 
                                                     .executes(ctx -> {
                                                 // sl add exp [player] [amount] [system]
@@ -123,7 +127,9 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                addPlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
+                                                if (!addPlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully gave "+p.getName()+" "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -139,7 +145,7 @@ public class CommandCore {
                                                 return builder.buildFuture();
                                                     })
 
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
+
 
                                                     .executes(ctx -> {
                                                 // sl add level [player] [amount] [system]
@@ -154,13 +160,15 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                addPlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
+                                                if (!addPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully gave "+p.getName()+" "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
-            .then(Commands.literal("remove")
+            .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
                     .then(Commands.literal("exp")
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
@@ -171,7 +179,6 @@ public class CommandCore {
                                                 return builder.buildFuture();
                                                     })
 
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
 
                                                     .executes(ctx -> {
                                                 // sl remove exp [player] [amount] [system]
@@ -187,7 +194,9 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                removePlayerExp(p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem);
+                                                if (!removePlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully removed "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp from "+p.getName()+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -203,7 +212,7 @@ public class CommandCore {
                                                 return builder.buildFuture();
                                                     })
 
-                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
+
 
                                                     .executes(ctx -> {
                                                 // sl remove level [player] [amount] [system]
@@ -219,14 +228,16 @@ public class CommandCore {
                                                 }
 
                                                 // Command Logic
-                                                removePlayerLevel(p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem);
+                                                if (!removePlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
                                                 sender.sendMessage(
                                                         Component.text("Successfully removed "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels from "+p.getName()+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
 
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
-            .then(Commands.literal("addSystem")
+            .then(Commands.literal("addSystem").requires(source -> source.getSender().hasPermission("serverlevels.commands.addsystem"))
                     .then(Commands.argument("player", ArgumentTypes.player())
                             .then(Commands.argument("levelSystem",StringArgumentType.word())
                                     .suggests((ctx,builder) -> {
@@ -236,7 +247,6 @@ public class CommandCore {
                                         return builder.buildFuture();
                                     })
 
-                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.addsystem"))
 
                                     .executes(ctx -> {
                                 // Verify permissions first
@@ -254,7 +264,7 @@ public class CommandCore {
                                 sender.sendMessage(Component.text("Successfully added player to system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
                                 return Command.SINGLE_SUCCESS;
                             }))))
-            .then(Commands.literal("removeSystem")
+            .then(Commands.literal("removeSystem").requires(source -> source.getSender().hasPermission("serverlevels.commands.removesystem"))
                     .then(Commands.argument("player",ArgumentTypes.player())
                             .then(Commands.argument("levelSystem",StringArgumentType.word())
 
@@ -265,7 +275,7 @@ public class CommandCore {
                                         return builder.buildFuture();
                                     })
 
-                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.removesystem"))
+
 
                                     .executes(ctx -> {
                                 // Verify permissions first
@@ -284,29 +294,37 @@ public class CommandCore {
                                 sender.sendMessage(Component.text("Successfully removed player from system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
                                 return Command.SINGLE_SUCCESS;
                             }))))
-            .then(Commands.literal("setMultiplier").then(Commands.argument("player",ArgumentTypes.player())).then(Commands.argument("multiplier",DoubleArgumentType.doubleArg()).then(Commands.argument("levelSystem",StringArgumentType.word()))
+            .then(Commands.literal("setMultiplier").requires(source -> source.getSender().hasPermission("serverlevels.commands.setMultiplier"))
+                    .then(Commands.argument("player",ArgumentTypes.player())
+                            .then(Commands.argument("multiplier",DoubleArgumentType.doubleArg())
+                                    .then(Commands.argument("levelSystem",StringArgumentType.word())
 
-                    .suggests((ctx,builder) -> {
-                        plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                            builder.suggest(levelSystem.getSystemName());
-                        });
-                        return builder.buildFuture();
-                    })
+                                            .suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                            })
 
-                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.setMultiplier"))
+                                            .executes(ctx -> {
+                                // sl setMultiplier [player] [multiplier] [system]
+                                CommandSender sender = ctx.getSource().getSender();
 
-                    .executes(ctx -> {
-                        final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
-                        Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
+                                Player p = resolver.resolve(ctx.getSource()).getFirst();
 
-                        String systemName = StringArgumentType.getString(ctx,"levelSystem");
-                        if (!checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(systemName))) {
-                            return Command.SINGLE_SUCCESS;
-                        }
+                                String systemName = StringArgumentType.getString(ctx,"levelSystem");
+                                if (!checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(systemName))) {
+                                    return Command.SINGLE_SUCCESS;
+                                }
 
-                        p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,DoubleArgumentType.getDouble(ctx,"multiplier"));
-                        return Command.SINGLE_SUCCESS;
-            })))
+                                double multiplier = DoubleArgumentType.getDouble(ctx,"multiplier");
+                                p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,multiplier);
+                                sender.sendMessage(
+                                        Component.text("Successfully set "+p.getName()+"'s exp multiplier to "+multiplier+" in system "+systemName)
+                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                return Command.SINGLE_SUCCESS;
+                            })))))
             .then(Commands.literal("reload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
 
@@ -315,10 +333,12 @@ public class CommandCore {
                 plugin.reloadConfig();
                 plugin.loadConfigs();
 
+                // setupDatabase swaps in a new connection pool and closes the old one
                 plugin.getDatabaseManager().setupDatabase();
 
-                plugin.getLevelSystemRegistry().clearRegistry();
+                // registerLevelSystems builds a new registry and swaps it in, so it doesn't need clearing first
                 plugin.registerLevelSystems();
+                plugin.reloadCompatConfigs();
 
                 sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
                 return Command.SINGLE_SUCCESS;
@@ -328,54 +348,87 @@ public class CommandCore {
 
 
 
-    private void setPlayerExp(Player p, double newExp, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    // Each of these return false (after telling the sender) if the player isn't in the level system
+
+    private boolean setPlayerExp(CommandContext<CommandSourceStack> ctx, Player p, double newExp, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
         lp.setExp(newExp);
         lp.adjustLevel();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        lp.save();
+        return true;
     }
 
-    private void setPlayerLevel(Player p, int newLevel, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    private boolean setPlayerLevel(CommandContext<CommandSourceStack> ctx, Player p, int newLevel, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
         lp.setLevel(newLevel);
         lp.adjustExp();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        lp.save();
+        return true;
     }
 
-    private void addPlayerExp(Player p, double addedExp, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    private boolean addPlayerExp(CommandContext<CommandSourceStack> ctx, Player p, double addedExp, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
 
         lp.incrementExp(addedExp);
-        lp.adjustLevel();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        lp.save();
+        return true;
     }
 
-    private void addPlayerLevel(Player p, int addedLevels, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    private boolean addPlayerLevel(CommandContext<CommandSourceStack> ctx, Player p, int addedLevels, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
 
         int newLevel = lp.getLevel() + addedLevels;
 
         lp.setLevel(newLevel);
         lp.adjustExp();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        lp.save();
+        return true;
     }
 
-    private void removePlayerExp(Player p, double removedExp, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    private boolean removePlayerExp(CommandContext<CommandSourceStack> ctx, Player p, double removedExp, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
 
-        lp.incrementExp(-removedExp);
-        lp.adjustLevel();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        // Removals ignore exp multipliers and don't show an exp gain message
+        lp.decrementExp(removedExp);
+        lp.save();
+        return true;
     }
 
-    private void removePlayerLevel(Player p, int removedLevels, String levelSystem) {
-        LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(p, levelSystem);
+    private boolean removePlayerLevel(CommandContext<CommandSourceStack> ctx, Player p, int removedLevels, String levelSystem) {
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return false;
+        }
 
         int newLevel = lp.getLevel() - removedLevels;
 
         lp.setLevel(newLevel);
         lp.adjustExp();
-        plugin.getDatabaseManager().saveLeveledPlayer(lp);
+        lp.save();
+        return true;
+    }
+
+    private LeveledPlayer getLeveledPlayerOrNotify(CommandContext<CommandSourceStack> ctx, Player p, String levelSystem) {
+        LeveledPlayer lp = LeveledPlayer.fromPlayer(p,levelSystem);
+        if (lp == null) {
+            ctx.getSource().getSender().sendMessage(Component.text(p.getName()+" is not in level system "+levelSystem+"!").color(TextColor.color(Color.RED.asRGB())));
+        }
+        return lp;
     }
 
     private boolean checkValidCommand(CommandContext<CommandSourceStack> ctx,Player p, LevelSystem ls) {

@@ -19,22 +19,26 @@ public class NouveauEnchantingCompatEvents implements Listener {
     File neYml = new File(plugin.getDataFolder()+"/Compat/nouveauenchanting.yml");
     YamlConfiguration neConf;
 
+    public NouveauEnchantingCompatEvents() {
+        reloadConfig();
+    }
+
+    public void reloadConfig() {
+        neConf = YamlConfiguration.loadConfiguration(neYml);
+    }
+
     @EventHandler
     public void onEnchant(PlayerEnchantEvent event) {
-        neConf = YamlConfiguration.loadConfiguration(neYml);
-        plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
+        final Registry<Enchantment> enchantmentRegistry = RegistryAccess
+                .registryAccess()
+                .getRegistry(RegistryKey.ENCHANTMENT);
 
-            if (!(plugin.getDatabaseManager().playerHasRecord(event.getPlayer(), system.getSystemName()))) {
-                return;
-            }
+        plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
 
             // Start with default exp amount
             double expToAdd = neConf.getDouble(system.getSystemName()+".exp-gain.on-enchant");
             if (neConf.getConfigurationSection(system.getSystemName()+".enchantments") != null) {
                 for (String enchantKey : neConf.getConfigurationSection(system.getSystemName()+".enchantments").getKeys(false)) {
-                    final Registry<Enchantment> enchantmentRegistry = RegistryAccess
-                            .registryAccess()
-                            .getRegistry(RegistryKey.ENCHANTMENT);
                     Enchantment enchantment = enchantmentRegistry.get(
                             RegistryKey.ENCHANTMENT.typedKey(Key.key("minecraft:" + enchantKey)));
 
@@ -49,9 +53,13 @@ public class NouveauEnchantingCompatEvents implements Listener {
 
             if (expToAdd != 0) {
 
-                LeveledPlayer lp = plugin.getDatabaseManager().getLeveledPlayer(event.getPlayer(), system.getSystemName());
+                LeveledPlayer lp = LeveledPlayer.fromPlayer(event.getPlayer(), system.getSystemName());
+                if (lp == null) {
+                    // Player isn't in this system
+                    return;
+                }
                 lp.incrementExp(expToAdd);
-                plugin.getDatabaseManager().saveLeveledPlayer(lp);
+                lp.save();
             }
         });
 

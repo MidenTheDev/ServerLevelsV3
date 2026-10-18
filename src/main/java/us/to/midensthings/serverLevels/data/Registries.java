@@ -7,9 +7,8 @@ public class Registries {
 
     private static final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
 
-    private static LevelSystemRegistry levelSystemRegistry = plugin.getLevelSystemRegistry();
-
     public static LevelSystem getLevelSystem(String name) {
-        return levelSystemRegistry.getLevelSystem(name);
+        // Look the registry up every time, /sl reload replaces it with a new instance
+        return plugin.getLevelSystemRegistry().getLevelSystem(name);
     }
 }

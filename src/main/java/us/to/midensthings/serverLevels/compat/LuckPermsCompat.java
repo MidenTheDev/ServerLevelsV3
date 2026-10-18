@@ -24,6 +24,10 @@ public class LuckPermsCompat {
         if (perms.isEmpty()) {
             return;
         }
+        if (luckPermsAPI == null) {
+            Bukkit.getLogger().warning("[ServerLevels] Could not give milestone permissions to " + p.getName() + ", LuckPerms API is not available");
+            return;
+        }
 
         User user = luckPermsAPI.getPlayerAdapter(Player.class).getUser(p);
         for (String perm : perms) {
