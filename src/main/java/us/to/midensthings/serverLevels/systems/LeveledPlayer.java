@@ -119,8 +119,11 @@ public class LeveledPlayer {
     public void incrementExp(double expToAdd) {
         LevelSystem ls = getSystem();
         this.exp += (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
+        // Check if exp is under zero, and if it is, set it to zero
+        if (exp <= 0) {
+            exp = 0;
+        }
         // Show player the exp gain title
-
         if (ls.showExpGain()) {
             DecimalFormat df = new DecimalFormat("##.##");
             df.setRoundingMode(RoundingMode.DOWN);
