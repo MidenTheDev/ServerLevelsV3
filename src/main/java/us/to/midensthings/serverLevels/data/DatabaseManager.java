@@ -5,8 +5,10 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
+import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -128,10 +130,12 @@ public class DatabaseManager {
                 pstmt.setString(1, p.getUniqueId().toString());
                 try (ResultSet resultSet = pstmt.executeQuery()) {
                     resultSet.next();
+                    double expMultiplier = p.getPersistentDataContainer().getOrDefault(NamespacedKeys.generatePlayerExpMultiplierKey(system), PersistentDataType.DOUBLE,1.0);
                     lp = new LeveledPlayer(system,
                             resultSet.getString("uuid"),
                             resultSet.getDouble("exp"),
-                            resultSet.getInt("level"));
+                            resultSet.getInt("level"),
+                            expMultiplier);
 
 
                 }

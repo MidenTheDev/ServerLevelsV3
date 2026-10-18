@@ -5,9 +5,11 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.customevents.LevelDownEvent;
 import us.to.midensthings.serverLevels.customevents.LevelUpEvent;
+import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -25,24 +27,27 @@ public class LeveledPlayer {
     UUID uuid;
     // player's current exp
     double exp;
+
+    double expMultiplier;
     // players current level
     int level;
 
 
 
-    public LeveledPlayer(String system, UUID uuid, double exp, int level) {
+    public LeveledPlayer(String system, UUID uuid, double exp, int level, double expMultiplier) {
         this.system = system;
         this.uuid = uuid;
         this.exp = exp;
         this.level = level;
     }
 
-    public LeveledPlayer(String system, String uuid, double exp, int level) {
+    public LeveledPlayer(String system, String uuid, double exp, int level, double expMultiplier) {
         this.system = system;
         this.uuid = UUID.fromString(uuid);
         this.exp = exp;
         this.level = level;
     }
+
 
 
 
@@ -82,14 +87,38 @@ public class LeveledPlayer {
     }
 
     /***
+     * Gets the player's exp gain multiplier. This number is added to the level system's
+     * multipler and then the resulting number is multiplied with any exp the player is gaining via the incrementExp method.
+     * @return the multiplier
+     */
+    public double getExpMultiplier() {
+        return expMultiplier;
+    }
+
+    /***
+     * Sets the player's exp gain multiplier. This number is added to the level system's
+     * multipler and then the resulting number is multiplied with any exp the player is gaining via the incrementExp method.
+     * @return the multiplier
+     */
+    public void setExpMultiplier(double expMultiplier) {
+        this.expMultiplier = expMultiplier;
+        this.getPlayer().getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(this.getSystemName()), PersistentDataType.DOUBLE,expMultiplier);
+    }
+
+    public Player getPlayer() {
+        return Bukkit.getPlayer(uuid);
+    }
+
+    /***
      * Increases the player's exp by the given value.
      * Triggers level ups. Does NOT save to database.
      * @param expToAdd
      */
     public void incrementExp(double expToAdd) {
-        this.exp += expToAdd;
-        // Show player the exp gain title
         LevelSystem ls = getSystem();
+        this.exp += (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
+        // Show player the exp gain title
+
         if (ls.showExpGain()) {
             DecimalFormat df = new DecimalFormat("##.##");
             df.setRoundingMode(RoundingMode.DOWN);

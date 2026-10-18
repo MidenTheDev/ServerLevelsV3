@@ -16,9 +16,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
+import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
 import java.util.List;
 
@@ -31,20 +33,20 @@ public class CommandCore {
                     .then(Commands.literal("exp")
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
-                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                                                    builder.suggest(levelSystem.getSystemName());
-                                                });
-                                                return builder.buildFuture();
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word())
+
+                                                    .suggests((ctx,builder) -> {
+                                                        plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                            builder.suggest(levelSystem.getSystemName());
+                                                        });
+                                                        return builder.buildFuture();
                                                     })
+
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
+
                                                     .executes(ctx -> {
                                                 // sl set exp [player] [amount] [system]
-
                                                 CommandSender sender = ctx.getSource().getSender();
-                                                if (!sender.hasPermission("serverlevels.commands.set")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
 
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
@@ -70,13 +72,13 @@ public class CommandCore {
                                                     builder.suggest(levelSystem.getSystemName());
                                                 });
                                                 return builder.buildFuture();
-                                                    }).executes(ctx -> {
+                                                    })
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
+
+                                                    .executes(ctx -> {
                                                 // sl set level [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
-                                                if (!sender.hasPermission("serverlevels.commands.set")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
+
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
@@ -101,7 +103,11 @@ public class CommandCore {
                                                     builder.suggest(levelSystem.getSystemName());
                                                 });
                                                 return builder.buildFuture();
-                                                    }).executes(ctx -> {
+                                                    })
+
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
+
+                                                    .executes(ctx -> {
                                                 // sl add exp [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.add")) {
@@ -131,13 +137,14 @@ public class CommandCore {
                                                     builder.suggest(levelSystem.getSystemName());
                                                 });
                                                 return builder.buildFuture();
-                                                    }).executes(ctx -> {
+                                                    })
+
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
+
+                                                    .executes(ctx -> {
                                                 // sl add level [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
-                                                if (!sender.hasPermission("serverlevels.commands.add")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
+
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
@@ -162,14 +169,15 @@ public class CommandCore {
                                                     builder.suggest(levelSystem.getSystemName());
                                                 });
                                                 return builder.buildFuture();
-                                                    }).executes(ctx -> {
+                                                    })
+
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
+
+                                                    .executes(ctx -> {
                                                 // sl remove exp [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
-                                                if (!sender.hasPermission("serverlevels.commands.remove")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
+
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
                                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
@@ -193,14 +201,14 @@ public class CommandCore {
                                                     builder.suggest(levelSystem.getSystemName());
                                                 });
                                                 return builder.buildFuture();
-                                                    }).executes(ctx -> {
+                                                    })
+
+                                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
+
+                                                    .executes(ctx -> {
                                                 // sl remove level [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
-                                                if (!sender.hasPermission("serverlevels.commands.remove")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
 
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
@@ -220,13 +228,19 @@ public class CommandCore {
                                             }))))))
             .then(Commands.literal("addSystem")
                     .then(Commands.argument("player", ArgumentTypes.player())
-                            .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
+                            .then(Commands.argument("levelSystem",StringArgumentType.word())
+                                    .suggests((ctx,builder) -> {
+                                        plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                            builder.suggest(levelSystem.getSystemName());
+                                        });
+                                        return builder.buildFuture();
+                                    })
+
+                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.addsystem"))
+
+                                    .executes(ctx -> {
                                 // Verify permissions first
                                 CommandSender sender = ctx.getSource().getSender();
-                                if (!sender.hasPermission("serverlevels.commands.addsystem")) {
-                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                    return Command.SINGLE_SUCCESS;
-                                }
                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
                                 String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
@@ -242,13 +256,20 @@ public class CommandCore {
                             }))))
             .then(Commands.literal("removeSystem")
                     .then(Commands.argument("player",ArgumentTypes.player())
-                            .then(Commands.argument("levelSystem",StringArgumentType.word()).executes(ctx -> {
+                            .then(Commands.argument("levelSystem",StringArgumentType.word())
+
+                                    .suggests((ctx,builder) -> {
+                                        plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                            builder.suggest(levelSystem.getSystemName());
+                                        });
+                                        return builder.buildFuture();
+                                    })
+
+                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.removesystem"))
+
+                                    .executes(ctx -> {
                                 // Verify permissions first
                                 CommandSender sender = ctx.getSource().getSender();
-                                if (!sender.hasPermission("serverlevels.commands.removesystem")) {
-                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                                    return Command.SINGLE_SUCCESS;
-                                }
 
                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
                                 Player p = resolver.resolve(ctx.getSource()).getFirst();
@@ -263,14 +284,34 @@ public class CommandCore {
                                 sender.sendMessage(Component.text("Successfully removed player from system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
                                 return Command.SINGLE_SUCCESS;
                             }))))
+            .then(Commands.literal("setMultiplier").then(Commands.argument("player",ArgumentTypes.player())).then(Commands.argument("multiplier",DoubleArgumentType.doubleArg()).then(Commands.argument("levelSystem",StringArgumentType.word()))
+
+                    .suggests((ctx,builder) -> {
+                        plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                            builder.suggest(levelSystem.getSystemName());
+                        });
+                        return builder.buildFuture();
+                    })
+
+                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.setMultiplier"))
+
+                    .executes(ctx -> {
+                        final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
+                        Player p = resolver.resolve(ctx.getSource()).getFirst();
+
+                        String systemName = StringArgumentType.getString(ctx,"levelSystem");
+                        if (!checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(systemName))) {
+                            return Command.SINGLE_SUCCESS;
+                        }
+
+                        p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,DoubleArgumentType.getDouble(ctx,"multiplier"));
+                        return Command.SINGLE_SUCCESS;
+            })))
             .build();
 
-    public LiteralCommandNode<CommandSourceStack> reloadCommand = Commands.literal("slreload").executes(ctx -> {
+    public LiteralCommandNode<CommandSourceStack> reloadCommand = Commands.literal("slreload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
-                if (!sender.hasPermission("serverlevels.commands.reload")) {
-                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
-                    return Command.SINGLE_SUCCESS;
-                }
+
                 sender.sendMessage(Component.text("Reloading Server Levels, server may lag").color(TextColor.color(Color.GREEN.asRGB())));
 
                 plugin.reloadConfig();

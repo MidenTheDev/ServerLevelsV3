@@ -11,6 +11,9 @@ default:
       - 'give %player% diamond 1'
     messages:
       - '<green>You''ve earned a diamond for reaching level 10!</green>'
+    #permissions:
+    #  - "example.permission"
+    # permission milestone rewards require Luckperms!
   15:
     commands:
       - 'give %player% diamond 1'

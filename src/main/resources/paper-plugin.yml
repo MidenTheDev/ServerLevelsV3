@@ -36,3 +36,6 @@ permissions:
   serverlevels.commands.reload:
     default: op
     description: Allows usage of server levels reload command
+  serverlevels.commands.setMultiplier:
+    default: op
+    description: Allows usage of server levels setMultiplier
