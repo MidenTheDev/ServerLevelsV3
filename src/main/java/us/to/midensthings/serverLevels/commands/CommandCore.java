@@ -12,6 +12,7 @@ import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
@@ -23,6 +24,8 @@ import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.logging.Level;
@@ -360,10 +363,101 @@ public class CommandCore {
                 });
                 return Command.SINGLE_SUCCESS;
             }))
+            .then(Commands.literal("progress").requires(source -> source.getSender().hasPermission("serverlevels.commands.progress"))
+                    .then(Commands.argument("levelSystem",StringArgumentType.word())
+                            .suggests((ctx,builder) -> {
+                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                    builder.suggest(levelSystem.getSystemName());
+                                });
+                                return builder.buildFuture();
+                            })
+
+                            .executes(ctx -> {
+                                CommandSender sender = ctx.getSource().getSender();
+                                if (!(sender instanceof Player)) {
+                                    sender.sendMessage(MiniMessage.miniMessage().deserialize("<red>You must be a player to use this command!"));
+                                    return Command.SINGLE_SUCCESS;
+                                }
+
+                                Player p = (Player) sender;
+                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+                                displayProgress(ctx, p, plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+
+                            return Command.SINGLE_SUCCESS;
+
+
+                            }).then(Commands.argument("player",ArgumentTypes.player())
+                                    .requires(source -> source.getSender().hasPermission("serverlevels.commands.progress.other"))
+                                    .executes(ctx -> {
+                                        final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
+                                        Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                        String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+                                        displayProgress(ctx, p, plugin.getLevelSystemRegistry().getLevelSystem(levelSystem));
+
+                                        return Command.SINGLE_SUCCESS;
+                                    })
+
+                            )))
             .build();
 
 
 
+
+    // Number of segments in the progress bar, each one is 2.5% of a level
+    private static final int PROGRESS_BAR_LENGTH = 40;
+
+    /***
+     * Sends the sender a progress bar showing how far the player is from their next level in the system
+     */
+    private void displayProgress(CommandContext<CommandSourceStack> ctx, Player p, LevelSystem system) {
+        if (!checkValidCommand(ctx,p,system)) return;
+        CommandSender sender = ctx.getSource().getSender();
+
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, system.getSystemName());
+        if (lp == null) {
+            return;
+        }
+
+        DecimalFormat df = new DecimalFormat("##.##");
+        df.setRoundingMode(RoundingMode.DOWN);
+
+        int level = lp.getLevel();
+        double exp = lp.getExp();
+        boolean maxLevel = level >= system.getMaxLevel();
+
+        // Progress is measured within the current level, from the exp needed to reach it to the exp needed for the next one
+        double levelStartExp = system.getExpRequirement(level - 1);
+        double nextLevelExp = system.getExpRequirement(level);
+        double progress;
+        if (maxLevel || nextLevelExp <= levelStartExp) {
+            progress = 1;
+        } else {
+            progress = Math.clamp((exp - levelStartExp) / (nextLevelExp - levelStartExp), 0, 1);
+        }
+        // Round down so the bar never looks full before the player actually levels up
+        int filledSegments = (int) Math.floor(progress * PROGRESS_BAR_LENGTH);
+        int percent = (int) Math.floor(progress * 100);
+
+        String bar = "<dark_gray>[</dark_gray><green>" + "|".repeat(filledSegments) + "</green>"
+                + "<dark_gray>" + "|".repeat(PROGRESS_BAR_LENGTH - filledSegments) + "]</dark_gray>";
+
+        // Player and system names can only contain letters, numbers and underscores, so they're safe to put in MiniMessage
+        String title = (sender == p ? "Your" : p.getName() + "'s") + " " + system.getSystemName() + " progress";
+
+        sender.sendMessage(MiniMessage.miniMessage().deserialize("<gray>------ <gold>" + title + "</gold> ------"));
+        if (maxLevel) {
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(
+                    "<yellow>Level " + level + "</yellow> " + bar + " <gold>MAX</gold>"));
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(
+                    "<gray>Exp: <white>" + df.format(exp) + "</white> · Max level reached"));
+        } else {
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(
+                    "<yellow>Level " + level + "</yellow> " + bar + " <yellow>Level " + (level + 1) + "</yellow>"));
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(
+                    "<gray>Exp: <white>" + df.format(exp) + "</white> / <white>" + df.format(nextLevelExp) + "</white>"
+                            + " (<green>" + percent + "%</green>) · <white>" + df.format(nextLevelExp - exp) + "</white> to next level"));
+        }
+    }
 
     // Each of these return false (after telling the sender) if the player isn't in the level system
 

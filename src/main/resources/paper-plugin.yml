@@ -39,3 +39,9 @@ permissions:
   serverlevels.commands.setMultiplier:
     default: op
     description: Allows usage of server levels setMultiplier
+  serverlevels.commands.progress:
+    default: true
+    description: Allows players to view their own progress to the next level
+  serverlevels.commands.progress.other:
+    default: op
+    description: Allows viewing other players' progress to the next level
