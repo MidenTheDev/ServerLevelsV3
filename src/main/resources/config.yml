@@ -18,4 +18,8 @@ debug-mode: false
 check-for-updates: true
 # Checks Modrinth on startup and logs a message if a newer release is available.
 
-config-version: 2.0
+autosave-interval: 5m
+# How often player data is saved to the database. Combine d, h, m and s, e.g. 1d5h4m2s, 30m or 45s.
+# Player data is also saved when a player logs off and when the server stops.
+
+config-version: 2.1

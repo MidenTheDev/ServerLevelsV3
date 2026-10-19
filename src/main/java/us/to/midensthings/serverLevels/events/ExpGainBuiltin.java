@@ -100,7 +100,7 @@ public class ExpGainBuiltin implements Listener {
         });
     }
 
-    // Adds the exp to the player in the system and saves it. Does nothing if the exp is 0 or the player isn't in the system
+    // Adds the exp to the player in the system, autosave writes it to the database. Does nothing if the exp is 0 or the player isn't in the system
     private void giveExp(Player p, LevelSystem system, double expToAdd) {
         if (expToAdd == 0) {
             return;
@@ -111,6 +111,5 @@ public class ExpGainBuiltin implements Listener {
             return;
         }
         lp.incrementExp(expToAdd);
-        lp.save();
     }
 }

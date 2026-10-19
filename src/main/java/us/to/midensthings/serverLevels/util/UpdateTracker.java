@@ -65,8 +65,8 @@ public class UpdateTracker {
         return null;
     }
 
-    // ignore suffixes, check only numeric parts
-    private boolean isNewer(String latest, String current) {
+    // ignore suffixes, check only numeric parts. Also used by ConfigUpdater to compare config versions
+    static boolean isNewer(String latest, String current) {
         String[] latestParts = latest.split("[^0-9]+");
         String[] currentParts = current.split("[^0-9]+");
         int length = Math.max(latestParts.length, currentParts.length);
@@ -78,7 +78,7 @@ public class UpdateTracker {
         return false;
     }
 
-    private int parse(String part) {
+    private static int parse(String part) {
         try {
             return Integer.parseInt(part);
         } catch (NumberFormatException e) {

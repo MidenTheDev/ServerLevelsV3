@@ -7,12 +7,16 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.ApiStatus;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
+import us.to.midensthings.serverLevels.data.PlayerCache;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class LevelSystem {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
@@ -51,17 +55,30 @@ public class LevelSystem {
 
     private List<Integer> milestones;
 
+    private PlayerCache playerCache;
+
     // Per mob/block exp overrides from mobs.yml and blocks.yml, parsed once at load
     private Map<EntityType, Double> mobKillExp;
     private Map<Material, Double> blockBreakExp;
     private Map<Material, Double> blockBreakSilkExp;
     private Map<Material, Double> blockPlaceExp;
 
+    // Orders async writes of levelsystems.yml from saveToConfig, so an older save can't finish after a newer one
+    private static final Object SAVE_LOCK = new Object();
+    private static final AtomicLong SAVE_COUNTER = new AtomicLong();
+    private static long lastWrittenSave = 0;
+
+    // getExpRequirement for each level from 0 to max level, rebuilt whenever the requirement settings change
+    private volatile double[] expRequirementTable;
+    // Limits the table's memory use if max-level is set absurdly high, levels past this are calculated on demand
+    private static final int MAX_PRECOMPUTED_LEVELS = 100_000;
+
     private YamlConfiguration levelSystemConf = plugin.getLevelSystemsConf();
+
 
     public LevelSystem(String systemName) {
         this.systemName = systemName;
-
+        this.playerCache = new PlayerCache(systemName);
         // Get yamlconfiguration for level systems and fill in the class
         sendMsgOnLevelup = levelSystemConf.getBoolean(systemName+".send-message-on-levelup");
         if (sendMsgOnLevelup) {
@@ -98,6 +115,7 @@ public class LevelSystem {
         autoAddPlayers = levelSystemConf.getBoolean(systemName+".auto-add-players");
 
         scalarType = ScalarType.valueOf(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
+        rebuildExpRequirementTable();
 
         showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
         expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message");
@@ -125,6 +143,9 @@ public class LevelSystem {
         return overrides;
     }
 
+    /***
+     * Writes this system's settings to levelsystems.yml. The file is written in the background, errors are logged.
+     */
     public void saveToConfig() {
          levelSystemConf.set(systemName+".send-message-on-levelup",sendMsgOnLevelup);
         if (sendMsgOnLevelup) {
@@ -150,11 +171,30 @@ public class LevelSystem {
         levelSystemConf.set(systemName+".show-exp-gain",showExpGain);
         levelSystemConf.set(systemName+".exp-gain-message",expGainMsg);
 
+        // Build the file contents now, then write them off the main thread
+        String yaml = levelSystemConf.saveToString();
         File levelsystemsYml = new File(plugin.getDataFolder()+"/levelsystems.yml");
-        try {
-            levelSystemConf.save(levelsystemsYml);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        long saveId = SAVE_COUNTER.incrementAndGet();
+        Runnable write = () -> {
+            synchronized (SAVE_LOCK) {
+                // A newer save already wrote the file, don't overwrite it with older contents
+                if (saveId < lastWrittenSave) {
+                    return;
+                }
+                try {
+                    Files.writeString(levelsystemsYml.toPath(), yaml);
+                    lastWrittenSave = saveId;
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Could not save levelsystems.yml: " + e.getMessage());
+                }
+            }
+        };
+
+        // Async tasks can't be scheduled while the plugin is shutting down, so write right away then
+        if (plugin.isEnabled()) {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, write);
+        } else {
+            write.run();
         }
     }
 
@@ -166,7 +206,44 @@ public class LevelSystem {
         this.autoAddPlayers = autoAddPlayers;
     }
 
+    /***
+     * @return the total exp needed to go from level 0 to level + 1
+     */
     public double getExpRequirement(int level) {
+        if (level < 0) {
+            return 0;
+        }
+        double[] table = expRequirementTable;
+        if (level < table.length) {
+            return table[level];
+        }
+        // Past the precomputed levels, only happens above max level
+        return calculateExpRequirement(level);
+    }
+
+    // Precomputes getExpRequirement for every level up to max level, so level checks don't loop on every exp gain.
+    // Each entry is built from the previous one using the same steps as calculateExpRequirement, so the values are identical
+    private void rebuildExpRequirementTable() {
+        int size = Math.clamp((long) maxLevel + 1, 1, MAX_PRECOMPUTED_LEVELS);
+        double[] table = new double[size];
+        table[0] = baseExpRequirement;
+
+        double expLevelReq = baseExpRequirement;
+        for (int level = 1; level < size; level++) {
+            if (scalarType == ScalarType.EXPONENTIAL || scalarType == ScalarType.SQRT) {
+                expLevelReq = expLevelReq * expRequirementMultiplier;
+                // SQRT doesn't include the base requirement in its total, see calculateExpRequirement
+                double previous = (scalarType == ScalarType.SQRT && level == 1) ? 0 : table[level - 1];
+                table[level] = previous + expLevelReq;
+            } else {
+                // assume linear
+                table[level] = table[level - 1] + (level * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement);
+            }
+        }
+        expRequirementTable = table;
+    }
+
+    private double calculateExpRequirement(int level) {
         if (level==0) {
             return baseExpRequirement;
         }
@@ -293,6 +370,7 @@ public class LevelSystem {
 
     public void setMaxLevel(int maxLevel) {
         this.maxLevel = maxLevel;
+        rebuildExpRequirementTable();
     }
 
     public double getExpGainMultiplier() {
@@ -317,6 +395,7 @@ public class LevelSystem {
 
     public void setBaseExpRequirement(double baseExpRequirement) {
         this.baseExpRequirement = baseExpRequirement;
+        rebuildExpRequirementTable();
     }
 
     public double getExpRequirementMultiplier() {
@@ -325,6 +404,7 @@ public class LevelSystem {
 
     public void setExpRequirementMultiplier(double expRequirementMultiplier) {
         this.expRequirementMultiplier = expRequirementMultiplier;
+        rebuildExpRequirementTable();
     }
 
     public ScalarType getScalarType() {
@@ -333,6 +413,7 @@ public class LevelSystem {
 
     public void setScalarType(ScalarType scalarType) {
         this.scalarType = scalarType;
+        rebuildExpRequirementTable();
     }
 
     public double getExpOnChat() {
@@ -394,5 +475,17 @@ public class LevelSystem {
 
     public void setExpOnBlockPlace(double expOnBlockPlace) {
         this.expOnBlockPlace = expOnBlockPlace;
+    }
+
+    public PlayerCache getPlayerCache() {
+        return playerCache;
+    }
+
+    /***
+     * Replaces this system's player cache. Used on reload to keep online players' data when the system is recreated.
+     */
+    @ApiStatus.Internal
+    public void setPlayerCache(PlayerCache playerCache) {
+        this.playerCache = playerCache;
     }
 }

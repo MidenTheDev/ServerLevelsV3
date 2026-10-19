@@ -18,7 +18,8 @@ import java.io.File;
 public class ProjectKorraCompatEvents implements Listener {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
     File pkYml = new File(plugin.getDataFolder()+"/Compat/projectkorra.yml");
-    YamlConfiguration pkConf;
+    // volatile since /sl reload replaces it from a background thread
+    volatile YamlConfiguration pkConf;
 
     public ProjectKorraCompatEvents() {
         reloadConfig();
@@ -151,7 +152,6 @@ public class ProjectKorraCompatEvents implements Listener {
             return;
         }
         lp.incrementExp(exp);
-        lp.save();
     }
 
 }

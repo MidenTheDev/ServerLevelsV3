@@ -14,12 +14,20 @@ import us.to.midensthings.serverLevels.util.NamespacedKeys;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /***
  Represents the data of a player from a specified level system
  */
 public class LeveledPlayer {
     private static final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
+
+    // Formats exp for the exp gain message. Reused instead of created on every gain, one per thread since DecimalFormat isn't thread safe
+    private static final ThreadLocal<DecimalFormat> EXP_FORMAT = ThreadLocal.withInitial(() -> {
+        DecimalFormat df = new DecimalFormat("##.##");
+        df.setRoundingMode(RoundingMode.DOWN);
+        return df;
+    });
 
     // The level system the player data belongs to
     String system;
@@ -31,6 +39,9 @@ public class LeveledPlayer {
     double expMultiplier;
     // players current level
     int level;
+
+    // Whether exp or level changed since the last save, so autosave can skip players with nothing new
+    private volatile boolean dirty = false;
 
 
 
@@ -50,8 +61,43 @@ public class LeveledPlayer {
         this.expMultiplier = expMultiplier;
     }
 
+    /***
+     * Gets the player's data in the level system. Online players come from the cache, offline players are loaded from the database.
+     * For offline players this waits for the database, so avoid calling it on the main thread for them. Use fromUuidAsync instead.
+     * @return the player's data, or null if they aren't in the level system or the system doesn't exist
+     */
+    public static LeveledPlayer fromUuid(UUID uuid, String systemName) {
+        if (plugin.getLevelSystemRegistry().getLevelSystem(systemName) == null) {
+            // System doesn't exist
+            return null;
+        }
+        LeveledPlayer lp = plugin.getLevelSystemRegistry().getLevelSystem(systemName).getPlayerCache().getLeveledPlayer(uuid);
+        if (lp != null || Bukkit.getPlayer(uuid) != null) {
+            return lp;   // online and not cached → not in this system
+        }
+        return plugin.getDatabaseManager().getLeveledPlayer(uuid, systemName);  // offline lookup (API use)
+    }
 
-
+    /***
+     * Gets the player's data in the level system without blocking. Online players come from the cache and complete right away,
+     * offline players are loaded from the database in the background.
+     * <p>
+     * The future may complete on the database thread. Use the Bukkit scheduler to get back to the main thread before using
+     * most of the Bukkit API. Offline players' data isn't cached, so call save() after changing it.
+     * @return a future with the player's data, or null if they aren't in the level system or the system doesn't exist
+     */
+    public static CompletableFuture<LeveledPlayer> fromUuidAsync(UUID uuid, String systemName) {
+        LevelSystem system = plugin.getLevelSystemRegistry().getLevelSystem(systemName);
+        if (system == null) {
+            // System doesn't exist
+            return CompletableFuture.completedFuture(null);
+        }
+        LeveledPlayer lp = system.getPlayerCache().getLeveledPlayer(uuid);
+        if (lp != null || Bukkit.getPlayer(uuid) != null) {
+            return CompletableFuture.completedFuture(lp);   // online and not cached → not in this system
+        }
+        return plugin.getDatabaseManager().getLeveledPlayerAsync(uuid, systemName);
+    }
 
 
     public String getSystemName() {
@@ -66,8 +112,8 @@ public class LeveledPlayer {
         return uuid;
     }
 
-    public static LeveledPlayer fromPlayer(Player p, String levelSYstem) {
-        return plugin.getDatabaseManager().getLeveledPlayer(p,levelSYstem);
+    public static LeveledPlayer fromPlayer(Player p, String systemName) {
+        return fromUuid(p.getUniqueId(),systemName);
     }
 
     public int getLevel() {
@@ -81,6 +127,7 @@ public class LeveledPlayer {
      */
     public void setLevel(int level) {
         this.level = Math.clamp(level, 0, getSystem().getMaxLevel());
+        dirty = true;
     }
 
     public double getExp() {
@@ -94,6 +141,7 @@ public class LeveledPlayer {
      */
     public void setExp(double exp) {
         this.exp = exp;
+        dirty = true;
     }
 
     /***
@@ -112,7 +160,12 @@ public class LeveledPlayer {
      */
     public void setExpMultiplier(double expMultiplier) {
         this.expMultiplier = expMultiplier;
-        this.getPlayer().getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(this.getSystemName()), PersistentDataType.DOUBLE,expMultiplier);
+        Player player = getPlayer();
+        if (player == null) {
+            // Can only store the multiplier on online players
+            return;
+        }
+        player.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(this.getSystemName()), PersistentDataType.DOUBLE,expMultiplier);
     }
 
     public Player getPlayer() {
@@ -128,6 +181,7 @@ public class LeveledPlayer {
         LevelSystem ls = getSystem();
         double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
         this.exp += expGained;
+        dirty = true;
         // Check if exp is under zero, and if it is, set it to zero
         if (exp <= 0) {
             exp = 0;
@@ -135,10 +189,8 @@ public class LeveledPlayer {
         // Show player the exp gain title
         Player player = getPlayer();
         if (ls.showExpGain() && player != null) {
-            DecimalFormat df = new DecimalFormat("##.##");
-            df.setRoundingMode(RoundingMode.DOWN);
             // Show the exp actually gained after multipliers
-            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",df.format(expGained)).replace("%system%",system));
+            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",EXP_FORMAT.get().format(expGained)).replace("%system%",system));
 
             player.sendActionBar(expGainMsg);
 
@@ -153,14 +205,37 @@ public class LeveledPlayer {
      */
     public void decrementExp(double expToRemove) {
         this.exp = Math.max(0, this.exp - expToRemove);
+        dirty = true;
         adjustLevel();
     }
 
     /***
-     * Saves the current player data to the plugin's database
+     * Saves the current player data to the plugin's database.
+     * Cached players are autosaved, and saved when they log off, so this is only needed to save right away.
      */
     public void save() {
+        // Clear before saving, so a change made while the save is being queued marks the player dirty again
+        dirty = false;
         plugin.getDatabaseManager().saveLeveledPlayer(this);
+    }
+
+    /***
+     * Saves the player data to the database only if it changed since the last save.
+     * @return true if the player was saved
+     */
+    public boolean saveIfDirty() {
+        if (!dirty) {
+            return false;
+        }
+        save();
+        return true;
+    }
+
+    /***
+     * @return whether the player's exp or level changed since they were last saved
+     */
+    public boolean isDirty() {
+        return dirty;
     }
 
     /***
@@ -181,6 +256,7 @@ public class LeveledPlayer {
             while (level > 0 && exp < expForCurrentLevel) {
                 // decrease level
                 level--;
+                dirty = true;
                 LevelDownEvent levelDownEvent = new LevelDownEvent(this, level);
                 runOnMainThread(levelDownEvent::callEvent);
 
@@ -195,6 +271,7 @@ public class LeveledPlayer {
             while (level < ls.getMaxLevel() && exp >= expToNextLevel) {
                 // increase level
                 level++;
+                dirty = true;
                 int newLevel = level;
                 ls.sendLevelupMessage(getPlayer(),newLevel);
                 LevelUpEvent levelUpEvent = new LevelUpEvent(this, newLevel);
@@ -230,6 +307,7 @@ public class LeveledPlayer {
 
         double minExpForCurrentLevel = ls.getExpRequirement(level-1);
         exp = minExpForCurrentLevel;
+        dirty = true;
 
     }
 }

@@ -18,11 +18,14 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.PlayerLoader;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
 import java.util.List;
+import java.util.concurrent.CompletionException;
+import java.util.logging.Level;
 
 public class CommandCore {
 
@@ -259,7 +262,15 @@ public class CommandCore {
                                     return Command.SINGLE_SUCCESS;
                                 }
 
-                                plugin.getDatabaseManager().initializePlayer(p,levelSystem);
+                                LevelSystem system = plugin.getLevelSystemRegistry().getLevelSystem(levelSystem);
+                                if (system.getPlayerCache().getLeveledPlayer(p.getUniqueId()) == null) {
+                                    // Insert, then load from the database instead of caching a blank record, in case their real data is still loading.
+                                    // Both run on the database thread in order, so the load always sees the new record
+                                    plugin.getDatabaseManager().initializePlayer(p.getUniqueId(), levelSystem);
+                                    PlayerLoader.loadOnlinePlayer(p, List.of(system));
+                                } else {
+                                    sender.sendMessage(Component.text("Player is already in system "+ levelSystem).color(TextColor.color(Color.RED.asRGB())));
+                                }
 
                                 sender.sendMessage(Component.text("Successfully added player to system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
                                 return Command.SINGLE_SUCCESS;
@@ -289,6 +300,7 @@ public class CommandCore {
                                     return Command.SINGLE_SUCCESS;
                                 }
 
+                                plugin.getLevelSystemRegistry().getLevelSystem(levelSystem).getPlayerCache().deletePlayer(p.getUniqueId());
                                 plugin.getDatabaseManager().removePlayer(p,levelSystem);
 
                                 sender.sendMessage(Component.text("Successfully removed player from system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
@@ -319,7 +331,13 @@ public class CommandCore {
                                 }
 
                                 double multiplier = DoubleArgumentType.getDouble(ctx,"multiplier");
-                                p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,multiplier);
+                                LeveledPlayer lp = LeveledPlayer.fromPlayer(p,systemName);
+                                if (lp != null) {
+                                    lp.setExpMultiplier(multiplier);
+                                } else {
+                                    // Not in the system yet, store it so it applies if they're added later
+                                    p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,multiplier);
+                                }
                                 sender.sendMessage(
                                         Component.text("Successfully set "+p.getName()+"'s exp multiplier to "+multiplier+" in system "+systemName)
                                                 .color(TextColor.color(Color.GREEN.asRGB())));
@@ -328,19 +346,18 @@ public class CommandCore {
             .then(Commands.literal("reload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
 
-                sender.sendMessage(Component.text("Reloading Server Levels, server may lag").color(TextColor.color(Color.GREEN.asRGB())));
+                sender.sendMessage(Component.text("Reloading Server Levels...").color(TextColor.color(Color.GREEN.asRGB())));
 
-                plugin.reloadConfig();
-                plugin.loadConfigs();
-
-                // setupDatabase swaps in a new connection pool and closes the old one
-                plugin.getDatabaseManager().setupDatabase();
-
-                // registerLevelSystems builds a new registry and swaps it in, so it doesn't need clearing first
-                plugin.registerLevelSystems();
-                plugin.reloadCompatConfigs();
-
-                sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
+                // Files and the database are reloaded in the background, so the server doesn't freeze while it runs
+                plugin.reloadAsync().whenComplete((ignored, error) -> {
+                    if (error != null) {
+                        Throwable cause = error instanceof CompletionException ? error.getCause() : error;
+                        plugin.getLogger().log(Level.SEVERE, "Failed to reload Server Levels", cause);
+                        sender.sendMessage(Component.text("Failed to reload Server Levels: " + cause.getMessage()).color(TextColor.color(Color.RED.asRGB())));
+                        return;
+                    }
+                    sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
+                });
                 return Command.SINGLE_SUCCESS;
             }))
             .build();

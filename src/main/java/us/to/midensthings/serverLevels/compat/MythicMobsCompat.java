@@ -10,7 +10,8 @@ import java.io.File;
 public class MythicMobsCompat {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
     private File mmYml = new File(plugin.getDataFolder()+"/Compat/mythicmobs.yml");
-    private YamlConfiguration mmConf;
+    // volatile since /sl reload replaces it from a background thread
+    private volatile YamlConfiguration mmConf;
 
     public MythicMobsCompat() {
         reloadConfig();
