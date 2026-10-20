@@ -102,7 +102,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
                     // Player isn't in this system
                     return;
                 }
-                lp.incrementExp(expToAdd);
+                lp.gainExp(expToAdd);
             }
         });
 

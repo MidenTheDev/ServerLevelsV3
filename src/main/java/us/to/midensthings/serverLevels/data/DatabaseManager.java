@@ -127,29 +127,203 @@ public class DatabaseManager {
 
         // Create the connection
         try (Connection connection = dataSource.getConnection()) {
-            // Generate a table for every level system.
-            systemNames.forEach(system -> {
-                // System names go directly into the table name, so skip anything that isn't a safe identifier
-                if (!LevelSystemRegistry.isValidSystemName(system)) {
-                    return;
-                }
-
-                // Each table holds a player's uuid, their current exp, and their current level in its records.
-                String createTable = "CREATE TABLE IF NOT EXISTS sys_" + system + " ( "
-                        + "uuid CHAR(36) PRIMARY KEY, "
-                        + "exp DOUBLE, "
-                        + "level INT);";
-                try (Statement stmt = connection.createStatement()) {
-                    // sys_ prefix for table names for consistency
-
-                    stmt.execute(createTable);
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            });
+            createSchemaVersionTable(connection);
+            // Generate a table for every level system, and bring older tables up to the current schema
+            systemNames.forEach(system -> createTable(connection, system));
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    /***
+     * Creates the table for a new level system, if it doesn't exist yet. Runs on the database thread,
+     * so anything queued for the system afterwards (like adding players) happens after the table exists.
+     */
+    public void createTable(String system) {
+        runOnDbThread(() -> {
+            try (Connection connection = dataSource.getConnection()) {
+                createSchemaVersionTable(connection);
+                createTable(connection, system);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /*
+     Schema versions of the level system tables (sys_<system>):
+       1: uuid, exp, level. Tables from before schema versions were tracked
+       2: adds paused
+     When changing the schema, bump CURRENT_SCHEMA_VERSION, update createSystemTableSql, and add a migration step in migrateTable.
+     */
+    private static final int CURRENT_SCHEMA_VERSION = 2;
+    // Stores the schema version of each level system table
+    private static final String SCHEMA_VERSION_TABLE = "sl_schema_version";
+    // Temporary tables used while migrating. A different prefix from sys_, so they can't clash with a level system's table
+    private static final String MIGRATION_NEW_PREFIX = "slmig_new_";
+    private static final String MIGRATION_OLD_PREFIX = "slmig_old_";
+
+    // The SQL for a level system table with the current schema
+    private static String createSystemTableSql(String table) {
+        // Each table holds a player's uuid, their current exp, their current level, and whether their exp gains are paused
+        return "CREATE TABLE " + table + " ( "
+                + "uuid CHAR(36) PRIMARY KEY, "
+                + "exp DOUBLE, "
+                + "level INT, "
+                + "paused BOOLEAN NOT NULL DEFAULT FALSE)";
+    }
+
+    private void createSchemaVersionTable(Connection connection) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("CREATE TABLE IF NOT EXISTS " + SCHEMA_VERSION_TABLE + " ("
+                    + "table_name VARCHAR(64) PRIMARY KEY, "
+                    + "version INT NOT NULL)");
+        }
+    }
+
+    /***
+     * Creates the level system's table if it doesn't exist yet, or migrates it to the current schema if it's outdated
+     */
+    private void createTable(Connection connection, String system) {
+        // System names go directly into the table name, so skip anything that isn't a safe identifier
+        if (!LevelSystemRegistry.isValidSystemName(system)) {
+            return;
+        }
+        // sys_ prefix for table names for consistency
+        String table = "sys_" + system;
+
+        try {
+            recoverInterruptedMigration(connection, system);
+
+            if (!tableExists(connection, table)) {
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute(createSystemTableSql(table));
+                }
+                setSchemaVersion(connection, table, CURRENT_SCHEMA_VERSION);
+                return;
+            }
+
+            int version = getSchemaVersion(connection, table);
+            if (version < CURRENT_SCHEMA_VERSION) {
+                migrateTable(connection, system, version);
+            } else if (version > CURRENT_SCHEMA_VERSION) {
+                plugin.getLogger().warning("Table " + table + " uses database schema version " + version
+                        + ", which is newer than this version of ServerLevels supports (" + CURRENT_SCHEMA_VERSION + "). Did you downgrade the plugin?");
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Could not set up the table for level system " + system + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /***
+     * Migrates a level system's table to the current schema. The data is copied into a new table with the current schema,
+     * the row counts are checked, then the new table replaces the old one.
+     */
+    private void migrateTable(Connection connection, String system, int fromVersion) throws SQLException {
+        String table = "sys_" + system;
+        String newTable = MIGRATION_NEW_PREFIX + system;
+        String oldTable = MIGRATION_OLD_PREFIX + system;
+        plugin.getLogger().info("Migrating table " + table + " from database schema version " + fromVersion + " to " + CURRENT_SCHEMA_VERSION + "...");
+
+        try (Statement stmt = connection.createStatement()) {
+            // Clear out a copy left by an earlier migration that failed before the swap
+            if (tableExists(connection, newTable)) {
+                stmt.execute("DROP TABLE " + newTable);
+            }
+            stmt.execute(createSystemTableSql(newTable));
+
+            // Copy every row, filling in columns the old schema doesn't have
+            String copiedColumns = switch (fromVersion) {
+                // Version 1 has no paused column, nobody is paused
+                case 1 -> "uuid, exp, level, FALSE";
+                default -> throw new SQLException("No migration from database schema version " + fromVersion);
+            };
+            stmt.executeUpdate("INSERT INTO " + newTable + " (uuid, exp, level, paused) SELECT " + copiedColumns + " FROM " + table);
+
+            long oldRows = countRows(connection, table);
+            long newRows = countRows(connection, newTable);
+            if (oldRows != newRows) {
+                stmt.execute("DROP TABLE " + newTable);
+                throw new SQLException("Copied " + newRows + " of " + oldRows + " rows, leaving " + table + " unchanged");
+            }
+
+            // Swap the tables. If the server stops partway through, recoverInterruptedMigration finishes or undoes it on the next start
+            stmt.execute("ALTER TABLE " + table + " RENAME TO " + oldTable);
+            stmt.execute("ALTER TABLE " + newTable + " RENAME TO " + table);
+            stmt.execute("DROP TABLE " + oldTable);
+        }
+        setSchemaVersion(connection, table, CURRENT_SCHEMA_VERSION);
+        plugin.getLogger().info("Migrated table " + table + " (" + countRows(connection, table) + " players)");
+    }
+
+    /***
+     * Cleans up after a migration that was interrupted, e.g. by a crash, while swapping the tables
+     */
+    private void recoverInterruptedMigration(Connection connection, String system) throws SQLException {
+        String table = "sys_" + system;
+        String newTable = MIGRATION_NEW_PREFIX + system;
+        String oldTable = MIGRATION_OLD_PREFIX + system;
+        if (!tableExists(connection, oldTable)) {
+            // The swap never started. A leftover copy is cleared when the migration runs again
+            return;
+        }
+
+        try (Statement stmt = connection.createStatement()) {
+            if (tableExists(connection, table)) {
+                // Stopped after the new table was swapped in, only the old table's removal is left
+                stmt.execute("DROP TABLE " + oldTable);
+                setSchemaVersion(connection, table, CURRENT_SCHEMA_VERSION);
+            } else if (tableExists(connection, newTable)) {
+                // Stopped between the two renames. The new table has every row (checked before the swap), so finish the swap
+                stmt.execute("ALTER TABLE " + newTable + " RENAME TO " + table);
+                stmt.execute("DROP TABLE " + oldTable);
+                setSchemaVersion(connection, table, CURRENT_SCHEMA_VERSION);
+            } else {
+                // Shouldn't happen, but put the original table back rather than lose it
+                stmt.execute("ALTER TABLE " + oldTable + " RENAME TO " + table);
+            }
+        }
+        plugin.getLogger().warning("Recovered table " + table + " from an interrupted database migration");
+    }
+
+    // Works the same on H2, SQLite and MySQL, unlike DatabaseMetaData which differs in how it handles name case
+    private boolean tableExists(Connection connection, String table) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeQuery("SELECT 1 FROM " + table + " WHERE 1=0").close();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private long countRows(Connection connection, String table) throws SQLException {
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + table)) {
+            rs.next();
+            return rs.getLong(1);
+        }
+    }
+
+    // Tables without a recorded version were created before versions were tracked, so they're version 1
+    private int getSchemaVersion(Connection connection, String table) throws SQLException {
+        try (PreparedStatement pstmt = connection.prepareStatement("SELECT version FROM " + SCHEMA_VERSION_TABLE + " WHERE table_name=?")) {
+            pstmt.setString(1, table);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 1;
+            }
+        }
+    }
+
+    private void setSchemaVersion(Connection connection, String table, int version) throws SQLException {
+        // Delete then insert, since each database has its own upsert syntax
+        try (PreparedStatement delete = connection.prepareStatement("DELETE FROM " + SCHEMA_VERSION_TABLE + " WHERE table_name=?");
+             PreparedStatement insert = connection.prepareStatement("INSERT INTO " + SCHEMA_VERSION_TABLE + " (table_name, version) VALUES (?, ?)")) {
+            delete.setString(1, table);
+            delete.executeUpdate();
+            insert.setString(1, table);
+            insert.setInt(2, version);
+            insert.executeUpdate();
         }
     }
 
@@ -269,7 +443,7 @@ public class DatabaseManager {
     // Returns null if the player has no record in the system
     private LeveledPlayer selectPlayer(Connection connection, UUID uuid, String system, double expMultiplier) throws SQLException {
         // select player all data from the table according to player's uuid
-        String selectPlayerData = "SELECT uuid,exp,level FROM sys_" + system + " WHERE uuid=?";
+        String selectPlayerData = "SELECT uuid,exp,level,paused FROM sys_" + system + " WHERE uuid=?";
         try (PreparedStatement pstmt = connection.prepareStatement(selectPlayerData)) {
             pstmt.setString(1, uuid.toString());
             try (ResultSet resultSet = pstmt.executeQuery()) {
@@ -281,7 +455,8 @@ public class DatabaseManager {
                         resultSet.getString("uuid"),
                         resultSet.getDouble("exp"),
                         resultSet.getInt("level"),
-                        expMultiplier);
+                        expMultiplier,
+                        resultSet.getBoolean("paused"));
             }
         }
     }
@@ -291,15 +466,17 @@ public class DatabaseManager {
         String system = lp.getSystemName();
         double exp = lp.getExp();
         int level = lp.getLevel();
+        boolean paused = lp.isPaused();
         String uuid = lp.getUuid().toString();
 
         runOnDbThread(() -> {
             try (Connection connection = dataSource.getConnection()) {
-                String updatePlayerData = "UPDATE sys_" + system + " SET exp=?, level=? WHERE uuid=?";
+                String updatePlayerData = "UPDATE sys_" + system + " SET exp=?, level=?, paused=? WHERE uuid=?";
                 try (PreparedStatement pstmt = connection.prepareStatement(updatePlayerData)) {
                     pstmt.setDouble(1, exp);
                     pstmt.setInt(2, level);
-                    pstmt.setString(3, uuid);
+                    pstmt.setBoolean(3, paused);
+                    pstmt.setString(4, uuid);
                     pstmt.executeUpdate();
                 }
 

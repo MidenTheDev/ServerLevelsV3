@@ -7,10 +7,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-import us.to.midensthings.serverLevels.commands.CommandCore;
+import us.to.midensthings.serverLevels.commands.LSCommands;
+import us.to.midensthings.serverLevels.commands.SLCommands;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
 import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
+import us.to.midensthings.serverLevels.data.BoosterManager;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.PlayerLoader;
@@ -55,6 +57,7 @@ public final class ServerLevels extends JavaPlugin {
     private YamlConfiguration blocksConf;
 
     private DatabaseManager databaseManager;
+    private BoosterManager boosterManager;
     private PluginManager pm;
     private UpdateTracker updateTracker;
 
@@ -79,6 +82,9 @@ public final class ServerLevels extends JavaPlugin {
         databaseManager = new DatabaseManager();
         databaseManager.setupDatabase();
 
+        boosterManager = new BoosterManager();
+        boosterManager.start();
+
         // Level systems must exist before the join listener can load players into them
         registerLevelSystems();
         registerEvents();
@@ -98,6 +104,10 @@ public final class ServerLevels extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        // Saves how much time active boosters have left
+        if (this.boosterManager != null) {
+            this.boosterManager.shutdown();
+        }
         // databaseManager is null if startup failed before it was created
         if (this.databaseManager != null) {
             if (levelSystemRegistry != null) {
@@ -278,8 +288,10 @@ public final class ServerLevels extends JavaPlugin {
 
     private void registerCommands() {
         this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
-            CommandCore cmdCore = new CommandCore();
+            SLCommands cmdCore = new SLCommands();
             commands.registrar().register(cmdCore.rootCommand, "sl");
+            LSCommands lsCommands = new LSCommands();
+            commands.registrar().register(lsCommands.lsRootCommand,"ls");
         });
     }
 
@@ -338,6 +350,10 @@ public final class ServerLevels extends JavaPlugin {
     public YamlConfiguration getMobsConf() {return mobsConf;}
 
     public YamlConfiguration getBlocksConf() {return blocksConf;}
+
+    public BoosterManager getBoosterManager() {
+        return boosterManager;
+    }
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;

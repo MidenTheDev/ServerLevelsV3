@@ -151,7 +151,7 @@ public class ProjectKorraCompatEvents implements Listener {
             // Player isn't in this system
             return;
         }
-        lp.incrementExp(exp);
+        lp.gainExp(exp);
     }
 
 }

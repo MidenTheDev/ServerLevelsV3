@@ -46,4 +46,30 @@ public final class DurationParser {
         }
         return duration;
     }
+
+    /***
+     * Formats a duration in the same style parse() reads, e.g. "1d 5h 4m 2s". Rounds down to whole seconds.
+     */
+    public static String format(Duration duration) {
+        long seconds = Math.max(0, duration.toSeconds());
+        if (seconds == 0) {
+            return "0s";
+        }
+        StringBuilder formatted = new StringBuilder();
+        appendPart(formatted, seconds / 86400, "d");
+        appendPart(formatted, (seconds % 86400) / 3600, "h");
+        appendPart(formatted, (seconds % 3600) / 60, "m");
+        appendPart(formatted, seconds % 60, "s");
+        return formatted.toString();
+    }
+
+    private static void appendPart(StringBuilder formatted, long amount, String unit) {
+        if (amount == 0) {
+            return;
+        }
+        if (!formatted.isEmpty()) {
+            formatted.append(' ');
+        }
+        formatted.append(amount).append(unit);
+    }
 }

@@ -40,25 +40,62 @@ public class LeveledPlayer {
     // players current level
     int level;
 
-    // Whether exp or level changed since the last save, so autosave can skip players with nothing new
+    // Whether the player's exp gains from gameplay are paused. Stored in the database
+    private boolean paused;
+
+    // Whether exp, level or paused changed since the last save, so autosave can skip players with nothing new
     private volatile boolean dirty = false;
 
 
 
     public LeveledPlayer(String system, UUID uuid, double exp, int level, double expMultiplier) {
+        this(system, uuid, exp, level, expMultiplier, false);
+    }
+
+    public LeveledPlayer(String system, String uuid, double exp, int level, double expMultiplier) {
+        this(system, UUID.fromString(uuid), exp, level, expMultiplier, false);
+    }
+
+    public LeveledPlayer(String system, String uuid, double exp, int level, double expMultiplier, boolean paused) {
+        this(system, UUID.fromString(uuid), exp, level, expMultiplier, paused);
+    }
+
+    public LeveledPlayer(String system, UUID uuid, double exp, int level, double expMultiplier, boolean paused) {
         this.system = system;
         this.uuid = uuid;
         this.exp = exp;
         this.level = level;
         this.expMultiplier = expMultiplier;
+        this.paused = paused;
     }
 
-    public LeveledPlayer(String system, String uuid, double exp, int level, double expMultiplier) {
-        this.system = system;
-        this.uuid = UUID.fromString(uuid);
-        this.exp = exp;
-        this.level = level;
-        this.expMultiplier = expMultiplier;
+    /***
+     * @return whether the player's exp gains from gameplay are paused in this system
+     */
+    public boolean isPaused() {
+        return paused;
+    }
+
+    /***
+     * Pauses or unpauses the player's exp gains from gameplay in this system. While paused, gainExp does nothing,
+     * but incrementExp and the other setters still work, so admins can still change the player's exp and level.
+     */
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+        dirty = true;
+    }
+
+    /***
+     * Gives the player exp earned through gameplay, like mining or killing mobs. Does nothing while the player is paused.
+     * Use incrementExp to change exp regardless of pauses.
+     * @return whether the exp was given
+     */
+    public boolean gainExp(double expToAdd) {
+        if (paused) {
+            return false;
+        }
+        incrementExp(expToAdd);
+        return true;
     }
 
     /***
@@ -179,7 +216,8 @@ public class LeveledPlayer {
      */
     public void incrementExp(double expToAdd) {
         LevelSystem ls = getSystem();
-        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier);
+        // An active booster multiplies the total, so a 2x booster doubles whatever the player would normally get
+        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier)*plugin.getBoosterManager().getMultiplier(system);
         this.exp += expGained;
         dirty = true;
         // Check if exp is under zero, and if it is, set it to zero

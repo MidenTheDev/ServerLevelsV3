@@ -53,6 +53,15 @@ public class LevelSystem {
     private boolean autoAddPlayers;
     private String expGainMsg;
 
+    // Whether to broadcast a message to everyone when a booster for this system starts or ends
+    private boolean broadcastBoosters;
+    // Custom booster broadcast messages, null uses the defaults
+    private String boosterStartMsg;
+    private String boosterEndMsg;
+
+    private static final String DEFAULT_BOOSTER_START_MSG = "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>";
+    private static final String DEFAULT_BOOSTER_END_MSG = "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>";
+
     private List<Integer> milestones;
 
     private PlayerCache playerCache;
@@ -75,6 +84,28 @@ public class LevelSystem {
 
     private YamlConfiguration levelSystemConf = plugin.getLevelSystemsConf();
 
+
+    /***
+     * Creates a level system with every setting at its zero value (0, false, no messages, LINEAR scaling), without reading levelsystems.yml.
+     * It isn't registered or saved. Use saveToConfig() to write it to levelsystems.yml.
+     */
+    public static LevelSystem createEmpty(String systemName) {
+        return new LevelSystem(systemName, true);
+    }
+
+    // Leaves every setting at its zero value. The unused flag only separates this from the config reading constructor
+    private LevelSystem(String systemName, boolean empty) {
+        this.systemName = systemName;
+        this.playerCache = new PlayerCache(systemName);
+        milestones = new ArrayList<>();
+        scalarType = ScalarType.LINEAR;
+
+        mobKillExp = new EnumMap<>(EntityType.class);
+        blockBreakExp = new EnumMap<>(Material.class);
+        blockBreakSilkExp = new EnumMap<>(Material.class);
+        blockPlaceExp = new EnumMap<>(Material.class);
+        rebuildExpRequirementTable();
+    }
 
     public LevelSystem(String systemName) {
         this.systemName = systemName;
@@ -120,6 +151,10 @@ public class LevelSystem {
         showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
         expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message");
 
+        broadcastBoosters = levelSystemConf.getBoolean(systemName+".broadcast-boosters", false);
+        boosterStartMsg = levelSystemConf.getString(systemName+".booster-start-message");
+        boosterEndMsg = levelSystemConf.getString(systemName+".booster-end-message");
+
         mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "mobs.yml");
         blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "blocks.yml");
         blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "blocks.yml");
@@ -153,6 +188,7 @@ public class LevelSystem {
         }
 
         levelSystemConf.set(systemName+".use-milestones",useMilestones);
+        levelSystemConf.set(systemName+".auto-add-players",autoAddPlayers);
 
         levelSystemConf.set(systemName+".max-level",maxLevel);
         levelSystemConf.set(systemName+".exp-gain-multiplier",expGainMultiplier);
@@ -170,6 +206,10 @@ public class LevelSystem {
 
         levelSystemConf.set(systemName+".show-exp-gain",showExpGain);
         levelSystemConf.set(systemName+".exp-gain-message",expGainMsg);
+
+        levelSystemConf.set(systemName+".broadcast-boosters",broadcastBoosters);
+        levelSystemConf.set(systemName+".booster-start-message",boosterStartMsg);
+        levelSystemConf.set(systemName+".booster-end-message",boosterEndMsg);
 
         // Build the file contents now, then write them off the main thread
         String yaml = levelSystemConf.saveToString();
@@ -317,6 +357,36 @@ public class LevelSystem {
     // setters and getters
 
 
+    public boolean broadcastsBoosters() {
+        return broadcastBoosters;
+    }
+
+    public void setBroadcastBoosters(boolean broadcastBoosters) {
+        this.broadcastBoosters = broadcastBoosters;
+    }
+
+    /***
+     * @return the message broadcast when a booster starts. Supports MiniMessage and the %multiplier%, %system% and %duration% placeholders
+     */
+    public String getBoosterStartMsg() {
+        return boosterStartMsg == null ? DEFAULT_BOOSTER_START_MSG : boosterStartMsg;
+    }
+
+    public void setBoosterStartMsg(String boosterStartMsg) {
+        this.boosterStartMsg = boosterStartMsg;
+    }
+
+    /***
+     * @return the message broadcast when a booster ends. Supports MiniMessage and the %multiplier% and %system% placeholders
+     */
+    public String getBoosterEndMsg() {
+        return boosterEndMsg == null ? DEFAULT_BOOSTER_END_MSG : boosterEndMsg;
+    }
+
+    public void setBoosterEndMsg(String boosterEndMsg) {
+        this.boosterEndMsg = boosterEndMsg;
+    }
+
     public String getExpGainMsg() {
         if (expGainMsg == null) {
             return "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>";
@@ -386,6 +456,11 @@ public class LevelSystem {
     }
 
     public void setExpGainMultiplier(float expGainMultiplier) {
+        // Through the float's decimal form, so 0.1f becomes 0.1 instead of 0.10000000149011612
+        setExpGainMultiplier(Double.parseDouble(Float.toString(expGainMultiplier)));
+    }
+
+    public void setExpGainMultiplier(double expGainMultiplier) {
         this.expGainMultiplier = expGainMultiplier;
     }
 

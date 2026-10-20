@@ -13,7 +13,6 @@ import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSele
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -30,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.logging.Level;
 
-public class CommandCore {
+public class SLCommands {
 
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
 
@@ -398,9 +397,68 @@ public class CommandCore {
                                     })
 
                             )))
+            .then(BoosterCommands.boosterCommand())
+            .then(Commands.literal("pause").requires(source -> source.getSender().hasPermission("serverlevels.commands.pause"))
+                    .then(Commands.argument("player",ArgumentTypes.player()).then(Commands.argument("levelSystem",StringArgumentType.word())
+                            .suggests((ctx,builder) -> {
+                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                    builder.suggest(levelSystem.getSystemName());
+                                });
+                                return builder.buildFuture();
+                            })
+                            .executes(ctx -> {
+                                // sl pause [player] [system]
+                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
+                                Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                setPlayerPaused(ctx, p, StringArgumentType.getString(ctx, "levelSystem"), true);
+                                return Command.SINGLE_SUCCESS;
+                            })
+
+            )))
+            .then(Commands.literal("unpause").requires(source -> source.getSender().hasPermission("serverlevels.commands.pause"))
+                    .then(Commands.argument("player",ArgumentTypes.player()).then(Commands.argument("levelSystem",StringArgumentType.word())
+                            .suggests((ctx,builder) -> {
+                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                    builder.suggest(levelSystem.getSystemName());
+                                });
+                                return builder.buildFuture();
+                            })
+                            .executes(ctx -> {
+                                // sl unpause [player] [system]
+                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player",PlayerSelectorArgumentResolver.class);
+                                Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                setPlayerPaused(ctx, p, StringArgumentType.getString(ctx, "levelSystem"), false);
+                                return Command.SINGLE_SUCCESS;
+                            })
+
+            )))
             .build();
 
 
+    /***
+     * Pauses or unpauses the player's exp gains from gameplay in the system, and saves it right away
+     */
+    private void setPlayerPaused(CommandContext<CommandSourceStack> ctx, Player p, String levelSystem, boolean paused) {
+        if (!checkValidCommand(ctx, p, plugin.getLevelSystemRegistry().getLevelSystem(levelSystem))) {
+            return;
+        }
+        LeveledPlayer lp = getLeveledPlayerOrNotify(ctx, p, levelSystem);
+        if (lp == null) {
+            return;
+        }
+
+        CommandSender sender = ctx.getSource().getSender();
+        if (lp.isPaused() == paused) {
+            sender.sendMessage(Component.text(p.getName() + "'s exp gains in " + levelSystem + " are already " + (paused ? "paused" : "unpaused") + "!")
+                    .color(TextColor.color(Color.RED.asRGB())));
+            return;
+        }
+
+        lp.setPaused(paused);
+        lp.save();
+        sender.sendMessage(Component.text((paused ? "Paused " : "Unpaused ") + p.getName() + "'s exp gains in " + levelSystem)
+                .color(TextColor.color(Color.GREEN.asRGB())));
+    }
 
 
     // Number of segments in the progress bar, each one is 2.5% of a level
@@ -456,6 +514,10 @@ public class CommandCore {
             sender.sendMessage(MiniMessage.miniMessage().deserialize(
                     "<gray>Exp: <white>" + df.format(exp) + "</white> / <white>" + df.format(nextLevelExp) + "</white>"
                             + " (<green>" + percent + "%</green>) · <white>" + df.format(nextLevelExp - exp) + "</white> to next level"));
+        }
+        if (lp.isPaused()) {
+            sender.sendMessage(MiniMessage.miniMessage().deserialize(
+                    "<red>" + (sender == p ? "Your" : p.getName() + "'s") + " exp gains in " + system.getSystemName() + " are paused</red>"));
         }
     }
 

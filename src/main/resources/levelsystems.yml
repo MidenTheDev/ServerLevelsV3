@@ -11,6 +11,11 @@ default:
   show-exp-gain: true
   exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
   auto-add-players: true
+  broadcast-boosters: true
+  # Broadcasts to everyone when an exp booster for this system starts or ends. Boosters are started with /sl booster
+  booster-start-message: "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>"
+  booster-end-message: "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>"
+  # Booster messages can use %multiplier%, %system%, and %duration% (start message only)
   exp-gain:
     on-chat: 0.2
     on-mobkill: 0.4

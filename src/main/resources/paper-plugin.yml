@@ -45,3 +45,18 @@ permissions:
   serverlevels.commands.progress.other:
     default: op
     description: Allows viewing other players' progress to the next level
+  serverlevels.commands.editsystem:
+    default: op
+    description: Allows users to edit the details of existing LevelSystems using /ls
+  serverlevels.commands.savesystem:
+    default: op
+    description: Allows users to save edited LevelSystems to levelsystems.yml using /ls save
+  serverlevels.commands.create:
+    default: op
+    description: Allows users to create new LevelSystems using /ls create
+  serverlevels.commands.booster:
+    default: op
+    description: Allows users to start or queue exp boosters for level systems using /sl booster
+  serverlevels.commands.pause:
+    default: op
+    description: Allows users to pause and unpause players' exp gains in a level system using /sl pause and /sl unpause

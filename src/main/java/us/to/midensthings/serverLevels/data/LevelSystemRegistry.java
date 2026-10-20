@@ -20,6 +20,13 @@ public class LevelSystemRegistry {
         systemMap.put(systemName, new LevelSystem(systemName));
     }
 
+    /***
+     * Registers an already created level system, e.g. one made with LevelSystem.createEmpty()
+     */
+    public void registerLevelSystem(LevelSystem levelSystem) {
+        systemMap.put(levelSystem.getSystemName(), levelSystem);
+    }
+
     public LevelSystem getLevelSystem(String systemName) {
         return systemMap.get(systemName);
     }
