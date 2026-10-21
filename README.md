@@ -32,6 +32,8 @@ The plugin also supports the following plugins to add new ways to gain exp:
 |Project Korra|✅|
 |Nouveau Enchanting|✅|
 |Mythic Mobs|✅|
+|LuckPerms|✅ (1.1.0)|
+|PlaceholderAPI|✅ (1.1.0)|
 |ItemsAdder|❌ (W.I.P)|
 
 ## 📁 Setup:
@@ -49,12 +51,23 @@ In some cases, you may want players to gain experience for killing mobs, but you
 |/sl **remove** [exp/level] [player] [amount] [system]| serverlevels.commands.remove | Removes the specified amount of exp or levels from the given player in the specified level system.|
 |/sl **addSystem** [player] [system] | serverlevels.commands.addsystem | Adds the player to the specified system (if they aren't already in it).|
 |/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | removes the player from the specified system, deleting their progress|
-|/slreload | serverlevels.commands.reload |Reloads the plugin, loading changes made in all configs and refreshing the database.|
+|/sl **setMultiplier** [player] [multiplier] [system] | serverlevels.commands.setMultiplier | Sets a multiplier for the specified player (increase/decrease exp gain per-player)|
+|/sl **progress** [system]| serverlevels.commands.progress | Checks the progress to the next level of the given level system|
+|/sl **progress** [system] [player]| serverlevels.commands.progress.other | Checks the progress of another player in the given system|
+|/sl **reload** | serverlevels.commands.reload |Reloads the plugin, loading changes made in all configs and refreshing the database.|
+|/sl **pause** [player] [system] | serverlevels.commands.pause |Pauses the given player's exp gain in a system without deleting their progress.|
+|/sl **unpause** [player] [system] | serverlevels.commands.pause |Unpauses the given player's exp gain in a system without deleting their progress.|
+|/sl OR /ls **booster** [system] **add** [multiplier] [duration]| serverlevels.commands.booster |Creates a global, temporary, exp booster.|
+|/sl OR /ls **booster** [system] **list**| serverlevels.commands.booster |Lists all active and queued boosters.|
+|/sl OR /ls **booster** [system] **cancel** [position/all]| serverlevels.commands.booster |Cancels the specified booster.|
+|/ls **create** [systemName] | serverlevels.commands.create |Creates a new, blank level system with the given name.|
+|/ls **set** [system] [setting] [value]| serverlevels.commands.editsystem |Allows you to configure your created Level Systems without editing the configs.|
+|/ls **save** [system] | serverlevels.commands.savesystem |Saves any changes made to the specified level system to the levelsystems.yml file.|
+
 
 ## 📒 Planned Features:
 - In-game GUI for setting up and customizing Level Systems
 - Support for more plugins (See the table above for current and W.I.P plugins).
-- Customizable chat prefix to display players' levels.
 - EXP bar hijacking to replace the vanilla exp system with your custom one.
 - Folia Support
 
