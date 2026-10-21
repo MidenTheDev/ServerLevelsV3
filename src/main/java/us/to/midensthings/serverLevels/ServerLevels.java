@@ -10,6 +10,7 @@ import org.bukkit.scheduler.BukkitTask;
 import us.to.midensthings.serverLevels.commands.LSCommands;
 import us.to.midensthings.serverLevels.commands.SLCommands;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
+import us.to.midensthings.serverLevels.compat.PAPIExpansion;
 import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
 import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
 import us.to.midensthings.serverLevels.data.BoosterManager;
@@ -336,6 +337,13 @@ public final class ServerLevels extends JavaPlugin {
         if (pm.getPlugin("LuckPerms") != null) {
             logger.info("Enabling LuckPerms support");
             enabledCompats.add("LuckPerms");
+        }
+
+        if (pm.getPlugin("PlaceholderAPI") != null) {
+            logger.info("Enabling PlaceholderAPI Support");
+            enabledCompats.add("PlaceholderAPI");
+            PAPIExpansion expansion = new PAPIExpansion();
+            expansion.register();
         }
     }
 

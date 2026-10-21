@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.ApiStatus;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
+import us.to.midensthings.serverLevels.compat.PlaceholderAPICompat;
 import us.to.midensthings.serverLevels.data.PlayerCache;
 
 import java.io.File;
@@ -321,7 +322,12 @@ public class LevelSystem {
     public void sendLevelupMessage(Player p, int level) {
         // Support MiniMessage formatting for colors by using MiniMessage API
         if (p != null && this.sendMsgOnLevelup && lvlUpMsg != null) {
-            p.sendMessage(MiniMessage.miniMessage().deserialize(lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level))));
+            String msg = lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level));
+            if (plugin.enabledCompats.contains("PlaceholderAPI")) {
+                PlaceholderAPICompat papiComp = new PlaceholderAPICompat();
+                msg = papiComp.parsePlaceholders(p,msg);
+            }
+            p.sendMessage(MiniMessage.miniMessage().deserialize(msg));
         }
     }
 
@@ -449,10 +455,6 @@ public class LevelSystem {
 
     public String getSystemName() {
         return systemName;
-    }
-
-    public void setSystemName(String systemName) {
-        this.systemName = systemName;
     }
 
     public void setExpGainMultiplier(float expGainMultiplier) {

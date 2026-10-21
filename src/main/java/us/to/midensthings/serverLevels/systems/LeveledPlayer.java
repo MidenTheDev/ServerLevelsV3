@@ -7,6 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.compat.PlaceholderAPICompat;
 import us.to.midensthings.serverLevels.customevents.LevelDownEvent;
 import us.to.midensthings.serverLevels.customevents.LevelUpEvent;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
@@ -228,7 +229,12 @@ public class LeveledPlayer {
         Player player = getPlayer();
         if (ls.showExpGain() && player != null) {
             // Show the exp actually gained after multipliers
-            Component expGainMsg = MiniMessage.miniMessage().deserialize(ls.getExpGainMsg().replace("%exp%",EXP_FORMAT.get().format(expGained)).replace("%system%",system));
+            String expMsg = ls.getExpGainMsg().replace("%exp%",EXP_FORMAT.get().format(expGained)).replace("%system%",system);
+            if (plugin.enabledCompats.contains("PlaceholderAPI")) {
+                PlaceholderAPICompat papiComp = new PlaceholderAPICompat();
+                expMsg = papiComp.parsePlaceholders(player,expMsg);
+            }
+            Component expGainMsg = MiniMessage.miniMessage().deserialize(expMsg);
 
             player.sendActionBar(expGainMsg);
 
