@@ -34,8 +34,8 @@ public class SLCommands {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
 
     public LiteralCommandNode<CommandSourceStack> rootCommand = Commands.literal("sl")
-            .then(Commands.literal("set").requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
-                    .then(Commands.literal("exp")
+            .then(Commands.literal("exp")
+                    .then(Commands.literal("set").requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word())
@@ -50,7 +50,7 @@ public class SLCommands {
 
 
                                                     .executes(ctx -> {
-                                                // sl set exp [player] [amount] [system]
+                                                // sl exp set [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
 
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
@@ -71,40 +71,7 @@ public class SLCommands {
 
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
-                    .then(Commands.literal("level")
-                            .then(Commands.argument("player", ArgumentTypes.player())
-                                    .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
-                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                                                    builder.suggest(levelSystem.getSystemName());
-                                                });
-                                                return builder.buildFuture();
-                                                    })
-
-
-                                                    .executes(ctx -> {
-                                                // sl set level [player] [amount] [system]
-                                                CommandSender sender = ctx.getSource().getSender();
-
-                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
-                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
-                                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
-
-                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
-
-                                                // Command Logic
-                                                if (!setPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully set "+p.getName()+"'s level to "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
-                                                return Command.SINGLE_SUCCESS;
-                                            }))))))
-            .then(Commands.literal("add").requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
-                    .then(Commands.literal("exp")
+                    .then(Commands.literal("add").requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
@@ -117,7 +84,7 @@ public class SLCommands {
 
 
                                                     .executes(ctx -> {
-                                                // sl add exp [player] [amount] [system]
+                                                // sl exp add [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.add")) {
                                                     sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
@@ -140,41 +107,7 @@ public class SLCommands {
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
-                    .then(Commands.literal("level")
-                            .then(Commands.argument("player", ArgumentTypes.player())
-                                    .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
-                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
-                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                                                    builder.suggest(levelSystem.getSystemName());
-                                                });
-                                                return builder.buildFuture();
-                                                    })
-
-
-
-                                                    .executes(ctx -> {
-                                                // sl add level [player] [amount] [system]
-                                                CommandSender sender = ctx.getSource().getSender();
-
-                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
-                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
-                                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
-
-                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
-
-                                                // Command Logic
-                                                if (!addPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
-                                                    return Command.SINGLE_SUCCESS;
-                                                }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully gave "+p.getName()+" "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
-                                                return Command.SINGLE_SUCCESS;
-                                            }))))))
-            .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
-                    .then(Commands.literal("exp")
+                    .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("expAmount", DoubleArgumentType.doubleArg())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
@@ -186,7 +119,7 @@ public class SLCommands {
 
 
                                                     .executes(ctx -> {
-                                                // sl remove exp [player] [amount] [system]
+                                                // sl exp remove [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
 
@@ -206,8 +139,41 @@ public class SLCommands {
                                                         Component.text("Successfully removed "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp from "+p.getName()+" in system "+levelSystem)
                                                                 .color(TextColor.color(Color.GREEN.asRGB())));
                                                 return Command.SINGLE_SUCCESS;
+                                            }))))))
+            .then(Commands.literal("level")
+                    .then(Commands.literal("set").requires(source -> source.getSender().hasPermission("serverlevels.commands.set"))
+                            .then(Commands.argument("player", ArgumentTypes.player())
+                                    .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    })
+
+
+                                                    .executes(ctx -> {
+                                                // sl level set [player] [amount] [system]
+                                                CommandSender sender = ctx.getSource().getSender();
+
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+
+                                                // Command Logic
+                                                if (!setPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+                                                sender.sendMessage(
+                                                        Component.text("Successfully set "+p.getName()+"'s level to "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" in system "+levelSystem)
+                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                return Command.SINGLE_SUCCESS;
                                             })))))
-                    .then(Commands.literal("level")
+                    .then(Commands.literal("add").requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
                             .then(Commands.argument("player", ArgumentTypes.player())
                                     .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
                                             .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
@@ -220,7 +186,40 @@ public class SLCommands {
 
 
                                                     .executes(ctx -> {
-                                                // sl remove level [player] [amount] [system]
+                                                // sl level add [player] [amount] [system]
+                                                CommandSender sender = ctx.getSource().getSender();
+
+                                                final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
+                                                Player p = resolver.resolve(ctx.getSource()).getFirst();
+                                                String levelSystem = StringArgumentType.getString(ctx, "levelSystem");
+
+                                                if (!(checkValidCommand(ctx,p,plugin.getLevelSystemRegistry().getLevelSystem(levelSystem)))) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+
+                                                // Command Logic
+                                                if (!addPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
+                                                    return Command.SINGLE_SUCCESS;
+                                                }
+                                                sender.sendMessage(
+                                                        Component.text("Successfully gave "+p.getName()+" "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels in system "+levelSystem)
+                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                return Command.SINGLE_SUCCESS;
+                                            })))))
+                    .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
+                            .then(Commands.argument("player", ArgumentTypes.player())
+                                    .then(Commands.argument("levelAmount", IntegerArgumentType.integer())
+                                            .then(Commands.argument("levelSystem", StringArgumentType.word()).suggests((ctx,builder) -> {
+                                                plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
+                                                    builder.suggest(levelSystem.getSystemName());
+                                                });
+                                                return builder.buildFuture();
+                                                    })
+
+
+
+                                                    .executes(ctx -> {
+                                                // sl level remove [player] [amount] [system]
 
                                                 CommandSender sender = ctx.getSource().getSender();
 
