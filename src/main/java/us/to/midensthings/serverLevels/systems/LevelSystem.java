@@ -1,6 +1,5 @@
 package us.to.midensthings.serverLevels.systems;
 
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -9,8 +8,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.ApiStatus;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.util.MessageFormatter;
 import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
-import us.to.midensthings.serverLevels.compat.PlaceholderAPICompat;
 import us.to.midensthings.serverLevels.data.PlayerCache;
 
 import java.io.File;
@@ -323,11 +322,7 @@ public class LevelSystem {
         // Support MiniMessage formatting for colors by using MiniMessage API
         if (p != null && this.sendMsgOnLevelup && lvlUpMsg != null) {
             String msg = lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level));
-            if (plugin.enabledCompats.contains("PlaceholderAPI")) {
-                PlaceholderAPICompat papiComp = new PlaceholderAPICompat();
-                msg = papiComp.parsePlaceholders(p,msg);
-            }
-            p.sendMessage(MiniMessage.miniMessage().deserialize(msg));
+            p.sendMessage(MessageFormatter.format(p, msg));
         }
     }
 
@@ -346,10 +341,10 @@ public class LevelSystem {
         List<String> commands = milestoneConf.getStringList(systemName+"."+level+".commands");
 
         for(String message : messages) {
-            p.sendMessage(MiniMessage.miniMessage().deserialize(message.replace("%player%",p.getName())));
+            p.sendMessage(MessageFormatter.format(p, message.replace("%player%",p.getName())));
         }
         for(String command : commands) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),command.replace("%player%",p.getName()));
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),MessageFormatter.formatPlain(p, command.replace("%player%",p.getName())));
         }
 
         if (plugin.enabledCompats.contains("LuckPerms")) {

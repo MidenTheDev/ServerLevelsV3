@@ -1,13 +1,12 @@
 package us.to.midensthings.serverLevels.systems;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
-import us.to.midensthings.serverLevels.compat.PlaceholderAPICompat;
+import us.to.midensthings.serverLevels.util.MessageFormatter;
 import us.to.midensthings.serverLevels.customevents.LevelDownEvent;
 import us.to.midensthings.serverLevels.customevents.LevelUpEvent;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
@@ -168,6 +167,30 @@ public class LeveledPlayer {
         dirty = true;
     }
 
+    /***
+     * @return how far the player is through their current level, from 0 to 1. 1 at max level
+     */
+    public double getLevelProgress() {
+        LevelSystem ls = getSystem();
+        if (level >= ls.getMaxLevel()) {
+            return 1;
+        }
+        // Measured from the exp needed to reach the current level to the exp needed for the next one
+        double levelStartExp = ls.getExpRequirement(level - 1);
+        double nextLevelExp = ls.getExpRequirement(level);
+        if (nextLevelExp <= levelStartExp) {
+            return 1;
+        }
+        return Math.clamp((exp - levelStartExp) / (nextLevelExp - levelStartExp), 0, 1);
+    }
+
+    /***
+     * @return the total exp needed to reach the next level
+     */
+    public double getNextLevelExp() {
+        return getSystem().getExpRequirement(level);
+    }
+
     public double getExp() {
         return exp;
     }
@@ -230,11 +253,7 @@ public class LeveledPlayer {
         if (ls.showExpGain() && player != null) {
             // Show the exp actually gained after multipliers
             String expMsg = ls.getExpGainMsg().replace("%exp%",EXP_FORMAT.get().format(expGained)).replace("%system%",system);
-            if (plugin.enabledCompats.contains("PlaceholderAPI")) {
-                PlaceholderAPICompat papiComp = new PlaceholderAPICompat();
-                expMsg = papiComp.parsePlaceholders(player,expMsg);
-            }
-            Component expGainMsg = MiniMessage.miniMessage().deserialize(expMsg);
+            Component expGainMsg = MessageFormatter.format(player, expMsg);
 
             player.sendActionBar(expGainMsg);
 

@@ -1,11 +1,11 @@
 package us.to.midensthings.serverLevels.data;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.scheduler.BukkitTask;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.util.MessageFormatter;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.util.DurationParser;
 
@@ -289,7 +289,8 @@ public class BoosterManager {
         }
 
         String template = started ? levelSystem.getBoosterStartMsg() : levelSystem.getBoosterEndMsg();
-        Component message = MiniMessage.miniMessage().deserialize(template
+        // Broadcasts aren't for one player, so only placeholders that don't need a player are filled in
+        Component message = MessageFormatter.format(null, template
                 .replace("%multiplier%", formatMultiplier(multiplier))
                 .replace("%system%", system)
                 .replace("%duration%", DurationParser.format(duration)));

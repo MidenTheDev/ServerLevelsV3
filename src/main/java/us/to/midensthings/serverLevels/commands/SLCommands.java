@@ -482,15 +482,9 @@ public class SLCommands {
         double exp = lp.getExp();
         boolean maxLevel = level >= system.getMaxLevel();
 
-        // Progress is measured within the current level, from the exp needed to reach it to the exp needed for the next one
-        double levelStartExp = system.getExpRequirement(level - 1);
-        double nextLevelExp = system.getExpRequirement(level);
-        double progress;
-        if (maxLevel || nextLevelExp <= levelStartExp) {
-            progress = 1;
-        } else {
-            progress = Math.clamp((exp - levelStartExp) / (nextLevelExp - levelStartExp), 0, 1);
-        }
+        // Progress is measured within the current level, the same as the %serverlevels_<system>_progress% placeholder
+        double nextLevelExp = lp.getNextLevelExp();
+        double progress = lp.getLevelProgress();
         // Round down so the bar never looks full before the player actually levels up
         int filledSegments = (int) Math.floor(progress * PROGRESS_BAR_LENGTH);
         int percent = (int) Math.floor(progress * 100);

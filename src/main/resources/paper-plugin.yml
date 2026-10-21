@@ -19,6 +19,7 @@ dependencies:
     PlaceholderAPI:
       load: BEFORE
       required: false
+      join-classpath: true
 permissions:
   serverlevels.commands.addsystem:
     default: op

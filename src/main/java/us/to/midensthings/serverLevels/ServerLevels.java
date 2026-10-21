@@ -67,6 +67,7 @@ public final class ServerLevels extends JavaPlugin {
     private NouveauEnchantingCompatEvents nouveauEnchantingCompatEvents;
     private ProjectKorraCompatEvents projectKorraCompatEvents;
     private MythicMobsCompat mythicMobsCompat;
+    private PAPIExpansion papiExpansion;
 
     @Override
     public void onEnable() {
@@ -105,6 +106,10 @@ public final class ServerLevels extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        // Unregister so a plugin manager reload doesn't leave the old expansion registered
+        if (this.papiExpansion != null) {
+            this.papiExpansion.unregister();
+        }
         // Saves how much time active boosters have left
         if (this.boosterManager != null) {
             this.boosterManager.shutdown();
@@ -342,8 +347,8 @@ public final class ServerLevels extends JavaPlugin {
         if (pm.getPlugin("PlaceholderAPI") != null) {
             logger.info("Enabling PlaceholderAPI Support");
             enabledCompats.add("PlaceholderAPI");
-            PAPIExpansion expansion = new PAPIExpansion();
-            expansion.register();
+            papiExpansion = new PAPIExpansion();
+            papiExpansion.register();
         }
     }
 
