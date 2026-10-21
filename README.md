@@ -46,11 +46,10 @@ In some cases, you may want players to gain experience for killing mobs, but you
 ## 💻 Commands:
 |Command|Permission|Description|
 |-------|----------|-----------|
-|/sl **set** [exp/level] [player] [amount] [system] | serverlevels.commands.set | Sets the exp or level of a specified player to the specified amount in the specified level system|
-|/sl **add** [exp/level] [player] [amount] [system]| serverlevels.commands.add |Gives the specified amount of exp or levels to the given player in the specified level system.|
-|/sl **remove** [exp/level] [player] [amount] [system]| serverlevels.commands.remove | Removes the specified amount of exp or levels from the given player in the specified level system.|
+|/sl **exp** [exp/level] [player] [amount] [system] | serverlevels.commands.[set/add/remove] | Adjusts the exp of the given player in the given system.|
+|/sl **level** [exp/level] [player] [amount] [system]| serverlevels.commands.[set/add/remove] |Adjusts the level of the given player in the given system.|
 |/sl **addSystem** [player] [system] | serverlevels.commands.addsystem | Adds the player to the specified system (if they aren't already in it).|
-|/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | removes the player from the specified system, deleting their progress|
+|/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | Removes the player from the specified system, deleting their progress.|
 |/sl **setMultiplier** [player] [multiplier] [system] | serverlevels.commands.setMultiplier | Sets a multiplier for the specified player (increase/decrease exp gain per-player)|
 |/sl **progress** [system]| serverlevels.commands.progress | Checks the progress to the next level of the given level system|
 |/sl **progress** [system] [player]| serverlevels.commands.progress.other | Checks the progress of another player in the given system|
