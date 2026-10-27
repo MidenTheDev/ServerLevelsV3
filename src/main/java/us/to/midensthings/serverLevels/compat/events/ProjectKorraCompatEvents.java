@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.util.EntityUtil;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
@@ -34,6 +35,10 @@ public class ProjectKorraCompatEvents implements Listener {
     // Entity killed by bending
     @EventHandler
     public void entityKilledByBending(EntityBendingDeathEvent event) {
+        // Only real mobs and players give exp, not armor stands
+        if (!EntityUtil.canGiveExp(event.getEntity())) {
+            return;
+        }
 
         if (event.getEntity() instanceof Player) {
             // player death
@@ -57,11 +62,11 @@ public class ProjectKorraCompatEvents implements Listener {
     @EventHandler
     public void entityDamagedByBending(AbilityDamageEntityEvent event) {
 
-        if (!(event.getEntity() instanceof LivingEntity)) {
+        // Only real mobs and players give exp. Armor stands count as living entities, so checking for LivingEntity isn't enough
+        if (!EntityUtil.canGiveExp(event.getEntity()) || !(event.getEntity() instanceof LivingEntity le)) {
             return;
         }
 
-        LivingEntity le = (LivingEntity) event.getEntity();
         if (le.getHealth() <= event.getDamage()) {
             // Entity was killed. Let the death event above handle it.
             return;

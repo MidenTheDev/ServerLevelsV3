@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.util.EntityUtil;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
@@ -34,6 +35,10 @@ public class ExpGainBuiltin implements Listener {
     @EventHandler
     public void onMobKill(EntityDeathEvent event) {
         if (event.getEntity().getKiller() == null) {
+            return;
+        }
+        // Breaking an armor stand also fires this event, with the player as the killer
+        if (!EntityUtil.canGiveExp(event.getEntity())) {
             return;
         }
 
