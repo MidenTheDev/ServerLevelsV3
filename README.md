@@ -46,8 +46,8 @@ In some cases, you may want players to gain experience for killing mobs, but you
 ## 💻 Commands:
 |Command|Permission|Description|
 |-------|----------|-----------|
-|/sl **exp** [exp/level] [player] [amount] [system] | serverlevels.commands.[set/add/remove] | Adjusts the exp of the given player in the given system.|
-|/sl **level** [exp/level] [player] [amount] [system]| serverlevels.commands.[set/add/remove] |Adjusts the level of the given player in the given system.|
+|/sl **exp** [set/add/remove] [player] [amount] [system] | serverlevels.commands.[set/add/remove] | Adjusts the exp of the given player in the given system.|
+|/sl **level** [set/add/remove] [player] [amount] [system]| serverlevels.commands.[set/add/remove] |Adjusts the level of the given player in the given system.|
 |/sl **addSystem** [player] [system] | serverlevels.commands.addsystem | Adds the player to the specified system (if they aren't already in it).|
 |/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | Removes the player from the specified system, deleting their progress.|
 |/sl **setMultiplier** [player] [multiplier] [system] | serverlevels.commands.setMultiplier | Sets a multiplier for the specified player (increase/decrease exp gain per-player)|
