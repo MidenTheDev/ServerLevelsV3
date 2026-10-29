@@ -26,7 +26,7 @@ Adds a new system for server owners to add their own leveling and progression sy
 ## 💹 Custom Leveling Systems:
 Using this plugin, you can define your own custom leveling systems. This is done in the plugin's levelsystems.yml file, where you can configure the name, how players gain exp, the formula that calculates the amount of exp required for each level, etc etc. There is no limit on the number of systems you can create, and using the plugin's API you can define your own custom methods for gaining exp!
 
-The plugin also supports the following plugins to add new ways to gain exp:
+The plugin also supports the following plugins to add new ways to gain exp, new milestone rewards, or to otherwise extend the features of the plguin:
 |Plugin|Has Support|
 |------|-----------|
 |Project Korra|✅|
@@ -46,8 +46,8 @@ In some cases, you may want players to gain experience for killing mobs, but you
 ## 💻 Commands:
 |Command|Permission|Description|
 |-------|----------|-----------|
-|/sl **exp** [exp/level] [player] [amount] [system] | serverlevels.commands.[set/add/remove] | Adjusts the exp of the given player in the given system.|
-|/sl **level** [exp/level] [player] [amount] [system]| serverlevels.commands.[set/add/remove] |Adjusts the level of the given player in the given system.|
+|/sl **exp** [set/add/remove] [player] [amount] [system] | serverlevels.commands.[set/add/remove] | Adjusts the exp of the given player in the given system.|
+|/sl **level** [set/add/remove] [player] [amount] [system]| serverlevels.commands.[set/add/remove] |Adjusts the level of the given player in the given system.|
 |/sl **addSystem** [player] [system] | serverlevels.commands.addsystem | Adds the player to the specified system (if they aren't already in it).|
 |/sl **removeSystem** [player] [system] | serverlevels.commands.removesystem | Removes the player from the specified system, deleting their progress.|
 |/sl **setMultiplier** [player] [multiplier] [system] | serverlevels.commands.setMultiplier | Sets a multiplier for the specified player (increase/decrease exp gain per-player)|
