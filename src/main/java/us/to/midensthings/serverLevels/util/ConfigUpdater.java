@@ -2,6 +2,8 @@ package us.to.midensthings.serverLevels.util;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.systems.LevelSystem;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +24,8 @@ public final class ConfigUpdater {
             new Migration("2.2", ConfigUpdater::addRateLimiter),
             // Only changes config-version itself from a number to text, see update
             new Migration("2.3", config -> {}),
-            new Migration("2.4", ConfigUpdater::addDatabaseOptions)
+            new Migration("2.4", ConfigUpdater::addDatabaseOptions),
+            new Migration("2.5", ConfigUpdater::addBoosterMessages)
     );
 
     private ConfigUpdater() {}
@@ -140,6 +143,31 @@ public final class ConfigUpdater {
         config.setComments("config-version", new ArrayList<>(Arrays.asList(
                 "Put in front of each level system's name for its database table, e.g. sys_mining. Use a different prefix for each server when",
                 "several servers share one MySQL database. Changing it starts new, empty tables, it does not rename existing ones.",
+                null // blank line
+        )));
+    }
+
+    // 2.5: booster-start-message, booster-end-message. They used to be set per level system, with broadcast-boosters to turn them on
+    private static void addBoosterMessages(FileConfiguration config) {
+        // Level system files are converted the next time they load (each one keeps whether it broadcast before)
+        SystemConfigs.requestBoosterMessageUpgrade();
+        if (config.contains("booster-start-message", true)) {
+            return;
+        }
+
+        // Same layout trick as addAutosaveInterval, so the messages go before config-version with their comments below them
+        List<String> commentsAboveVersion = config.getComments("config-version");
+        config.set("config-version", null);
+
+        config.set("booster-start-message", LevelSystem.DEFAULT_BOOSTER_START_MSG);
+        config.setComments("booster-start-message", commentsAboveVersion);
+        config.set("booster-end-message", LevelSystem.DEFAULT_BOOSTER_END_MSG);
+
+        config.set("config-version", "0");
+        config.setComments("config-version", new ArrayList<>(Arrays.asList(
+                "Broadcast to everyone when an exp booster starts or ends. Boosters are started with /sl booster. Messages use MiniMessage and can",
+                "use %multiplier%, %system%, and %duration% (start message only). Set a message to '' to turn it off. A level system can set its",
+                "own booster-start-message and booster-end-message in its file, including '' to turn them off for that system only.",
                 null // blank line
         )));
     }

@@ -284,11 +284,14 @@ public class BoosterManager {
     private void broadcast(String system, double multiplier, Duration duration, boolean started) {
         LevelSystemRegistry registry = plugin.getLevelSystemRegistry();
         LevelSystem levelSystem = registry == null ? null : registry.getLevelSystem(system);
-        if (levelSystem == null || !levelSystem.broadcastsBoosters()) {
+        if (levelSystem == null) {
             return;
         }
-
         String template = started ? levelSystem.getBoosterStartMsg() : levelSystem.getBoosterEndMsg();
+        if (template.isEmpty()) {
+            // Turned off for this system
+            return;
+        }
         // Broadcasts aren't for one player, so only placeholders that don't need a player are filled in
         Component message = MessageFormatter.format(null, template
                 .replace("%multiplier%", formatMultiplier(multiplier))

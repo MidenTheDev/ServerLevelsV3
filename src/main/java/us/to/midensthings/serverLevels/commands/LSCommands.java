@@ -82,12 +82,11 @@ public class LSCommands {
                             .then(setting("levelUpMessage", StringArgumentType.greedyString(), String.class,
                                     LevelSystem::getLevelUpMsg, (ls, msg) -> ls.setLevelUpMsg(messageOrOff(msg))))
 
-                            .then(setting("broadcastBoosters", BoolArgumentType.bool(), Boolean.class,
-                                    LevelSystem::broadcastsBoosters, LevelSystem::setBroadcastBoosters))
+                            // "default" goes back to the messages in config.yml
                             .then(setting("boosterStartMessage", StringArgumentType.greedyString(), String.class,
-                                    LevelSystem::getBoosterStartMsg, LevelSystem::setBoosterStartMsg))
+                                    LevelSystem::getBoosterStartMsg, (ls, msg) -> ls.setBoosterStartMsg(boosterMessage(msg))))
                             .then(setting("boosterEndMessage", StringArgumentType.greedyString(), String.class,
-                                    LevelSystem::getBoosterEndMsg, LevelSystem::setBoosterEndMsg))))
+                                    LevelSystem::getBoosterEndMsg, (ls, msg) -> ls.setBoosterEndMsg(boosterMessage(msg))))))
 
             // ls save [system]
             .then(Commands.literal("save").requires(source -> source.getSender().hasPermission("serverlevels.commands.savesystem"))
@@ -210,6 +209,11 @@ public class LSCommands {
                 .color(TextColor.color(Color.GREEN.asRGB())));
         sender.sendMessage(Component.text("Use /ls save " + levelSystem.getSystemName() + " to keep this change after a reload or restart")
                 .color(TextColor.color(Color.GRAY.asRGB())));
+    }
+
+    // A booster message typed in a command, where "default" means config.yml's message and "off" means no message
+    private static String boosterMessage(String message) {
+        return message.equalsIgnoreCase("default") ? null : messageOrOff(message);
     }
 
     // A message typed in a command, where "off" or "none" means no message

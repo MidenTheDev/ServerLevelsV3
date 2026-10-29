@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.systems.LevelSystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,6 +94,9 @@ public final class SystemConfigs {
                 files.put(system, systemFile);
             }
         }
+
+        // The booster message upgrade only runs once
+        upgradeBoosterMessages = false;
 
         // Build the combined views
         YamlConfiguration levelSystems = new YamlConfiguration();
@@ -188,7 +192,42 @@ public final class SystemConfigs {
         changed |= upgradeProjectKorra(plugin, system, file);
         changed |= upgradeBlocks(plugin, system, file);
         changed |= upgradeMessageToggles(plugin, system, file);
+        if (upgradeBoosterMessages) {
+            changed |= upgradeBoosterMessages(plugin, system, file);
+        }
         return changed;
+    }
+
+    // Set by the config.yml 2.5 update, see upgradeBoosterMessages
+    private static volatile boolean upgradeBoosterMessages = false;
+
+    /***
+     * Converts each system's booster messages the next time the system files load. Called by the config.yml 2.5 update, which
+     * always runs before the system files load
+     */
+    public static void requestBoosterMessageUpgrade() {
+        upgradeBoosterMessages = true;
+    }
+
+    // Booster messages used to be off unless a system had broadcast-boosters: true. They now come from config.yml unless the
+    // system sets its own, so each system keeps what it did: off becomes '', the old default text is dropped to use config.yml's
+    private static boolean upgradeBoosterMessages(ServerLevels plugin, String system, YamlConfiguration file) {
+        boolean broadcast = file.getBoolean("broadcast-boosters", false);
+        file.set("broadcast-boosters", null);
+        if (!broadcast) {
+            file.set("booster-start-message", "");
+            file.set("booster-end-message", "");
+            file.setComments("booster-start-message", List.of("This system doesn't broadcast boosters. Remove these to use the messages in config.yml"));
+        } else {
+            if (LevelSystem.DEFAULT_BOOSTER_START_MSG.equals(file.getString("booster-start-message"))) {
+                file.set("booster-start-message", null);
+            }
+            if (LevelSystem.DEFAULT_BOOSTER_END_MSG.equals(file.getString("booster-end-message"))) {
+                file.set("booster-end-message", null);
+            }
+        }
+        plugin.getLogger().info("Updated the booster messages of " + SYSTEMS_FOLDER + "/" + system + ".yml, they now default to the ones in config.yml");
+        return true;
     }
 
     // send-message-on-levelup and show-exp-gain turned the level up and exp gain messages on and off. Now an empty message

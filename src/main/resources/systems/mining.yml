@@ -9,6 +9,9 @@ exp-gain-multiplier: 0.0
 levelup-message: '<green>You leveled up! New mining level: %level%</green>'
 # No message above the hotbar when gaining mining exp
 exp-gain-message: ''
+# No booster broadcasts for mining. Remove these to use the messages in config.yml
+booster-start-message: ''
+booster-end-message: ''
 
 exp-gain:
   on-chat: 0.0

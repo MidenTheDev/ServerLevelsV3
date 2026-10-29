@@ -14,11 +14,10 @@ levelup-message: '<green>You leveled up! New level: %level%</green>'
 # Shown above the hotbar each time exp is gained
 exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
 
-# Broadcasts to everyone when an exp booster for this system starts or ends. Boosters are started with /sl booster
-# Booster messages can use %multiplier%, %system%, and %duration% (start message only)
-broadcast-boosters: true
-booster-start-message: "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>"
-booster-end-message: "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>"
+# Booster broadcasts use booster-start-message and booster-end-message in config.yml. To use different ones for this system,
+# set them here, or set them to '' to turn them off for this system
+# booster-start-message: ''
+# booster-end-message: ''
 
 # Exp given for each action. Mobs and blocks below can override these
 exp-gain:

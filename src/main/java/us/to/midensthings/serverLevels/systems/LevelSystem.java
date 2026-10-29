@@ -56,9 +56,7 @@ public class LevelSystem {
     private boolean autoAddPlayers;
     private String expGainMsg;
 
-    // Whether to broadcast a message to everyone when a booster for this system starts or ends
-    private boolean broadcastBoosters;
-    // Custom booster broadcast messages, null uses the defaults
+    // This system's booster broadcast messages. null uses the ones in config.yml, empty turns them off
     private String boosterStartMsg;
     private String boosterEndMsg;
 
@@ -66,8 +64,9 @@ public class LevelSystem {
     public static final String DEFAULT_LEVELUP_MSG = "<green>You leveled up! New level: %level%</green>";
     public static final String DEFAULT_EXP_GAIN_MSG = "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>";
 
-    private static final String DEFAULT_BOOSTER_START_MSG = "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>";
-    private static final String DEFAULT_BOOSTER_END_MSG = "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>";
+    // The booster messages in config.yml before they could be changed there, also used if config.yml is missing them
+    public static final String DEFAULT_BOOSTER_START_MSG = "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>";
+    public static final String DEFAULT_BOOSTER_END_MSG = "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>";
 
     private List<Integer> milestones;
 
@@ -162,7 +161,6 @@ public class LevelSystem {
 
         expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message", "");
 
-        broadcastBoosters = levelSystemConf.getBoolean(systemName+".broadcast-boosters", false);
         boosterStartMsg = levelSystemConf.getString(systemName+".booster-start-message");
         boosterEndMsg = levelSystemConf.getString(systemName+".booster-end-message");
 
@@ -295,7 +293,6 @@ public class LevelSystem {
 
         file.set("exp-gain-message",expGainMsg);
 
-        file.set("broadcast-boosters",broadcastBoosters);
         file.set("booster-start-message",boosterStartMsg);
         file.set("booster-end-message",boosterEndMsg);
 
@@ -425,32 +422,49 @@ public class LevelSystem {
     // setters and getters
 
 
+    /***
+     * @return whether a booster starting or ending in this system is broadcast
+     */
     public boolean broadcastsBoosters() {
-        return broadcastBoosters;
-    }
-
-    public void setBroadcastBoosters(boolean broadcastBoosters) {
-        this.broadcastBoosters = broadcastBoosters;
+        return !getBoosterStartMsg().isEmpty() || !getBoosterEndMsg().isEmpty();
     }
 
     /***
-     * @return the message broadcast when a booster starts. Supports MiniMessage and the %multiplier%, %system% and %duration% placeholders
+     * @deprecated booster broadcasts are turned off by setting the messages to empty, use setBoosterStartMsg / setBoosterEndMsg
      */
-    public String getBoosterStartMsg() {
-        return boosterStartMsg == null ? DEFAULT_BOOSTER_START_MSG : boosterStartMsg;
+    @Deprecated
+    public void setBroadcastBoosters(boolean broadcastBoosters) {
+        // On uses config.yml's messages, off turns both off for this system
+        setBoosterStartMsg(broadcastBoosters ? null : "");
+        setBoosterEndMsg(broadcastBoosters ? null : "");
     }
 
+    /***
+     * @return the message broadcast when a booster starts: this system's own, or config.yml's. Empty when it's turned off.
+     * Supports MiniMessage and the %multiplier%, %system% and %duration% placeholders
+     */
+    public String getBoosterStartMsg() {
+        return boosterStartMsg != null ? boosterStartMsg : plugin.getConfig().getString("booster-start-message", DEFAULT_BOOSTER_START_MSG);
+    }
+
+    /***
+     * @param boosterStartMsg this system's own message, empty to turn it off for this system, or null to use config.yml's
+     */
     public void setBoosterStartMsg(String boosterStartMsg) {
         this.boosterStartMsg = boosterStartMsg;
     }
 
     /***
-     * @return the message broadcast when a booster ends. Supports MiniMessage and the %multiplier% and %system% placeholders
+     * @return the message broadcast when a booster ends: this system's own, or config.yml's. Empty when it's turned off.
+     * Supports MiniMessage and the %multiplier% and %system% placeholders
      */
     public String getBoosterEndMsg() {
-        return boosterEndMsg == null ? DEFAULT_BOOSTER_END_MSG : boosterEndMsg;
+        return boosterEndMsg != null ? boosterEndMsg : plugin.getConfig().getString("booster-end-message", DEFAULT_BOOSTER_END_MSG);
     }
 
+    /***
+     * @param boosterEndMsg this system's own message, empty to turn it off for this system, or null to use config.yml's
+     */
     public void setBoosterEndMsg(String boosterEndMsg) {
         this.boosterEndMsg = boosterEndMsg;
     }
