@@ -30,6 +30,7 @@ import us.to.midensthings.serverLevels.events.PlayerJoin;
 import us.to.midensthings.serverLevels.events.PlayerLeave;
 import us.to.midensthings.serverLevels.util.ConfigUpdater;
 import us.to.midensthings.serverLevels.util.DurationParser;
+import us.to.midensthings.serverLevels.util.Messages;
 import us.to.midensthings.serverLevels.util.UpdateTracker;
 
 import java.io.File;
@@ -86,6 +87,7 @@ public final class ServerLevels extends JavaPlugin {
         saveDefaultConfig();
         ConfigUpdater.update(this);
         loadConfigs();
+        Messages.load(this);
 
         logger.info("Starting Database Manager");
         databaseManager = new DatabaseManager();
@@ -183,6 +185,7 @@ public final class ServerLevels extends JavaPlugin {
                     startAutosave();
                     expRateLimiter.load(getConfig(), levelSystemsConf);
                     loadDebugMode();
+                    Messages.load(this);
                 }, mainThread)
                 .whenComplete((ignored, error) -> reloading.set(false));
     }

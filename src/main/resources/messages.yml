@@ -1,0 +1,76 @@
+# Every message Server Levels sends to players and command senders. Messages use MiniMessage for colors and formatting,
+# and %name% placeholders, which are listed above each group. Set a message to '' to stop it being sent.
+# Level up, exp gain, milestone, and booster messages are set in each level system's file and in config.yml.
+
+# Used by many commands. %player%, %system%
+invalid-player: '<#ff0000>Invalid Player!'
+invalid-system: '<#ff0000>Invalid Level System!'
+not-in-system: '<#ff0000>%player% is not in level system %system%!'
+players-only: '<red>You must be a player to use this command!'
+no-permission: '<#ff0000>You do not have permission to use this command!'
+
+# /sl exp and /sl level. %player%, %amount%, %system%
+exp-set: '<#008000>Successfully set %player%''s exp to %amount% in system %system%'
+exp-added: '<#008000>Successfully gave %player% %amount% exp in system %system%'
+exp-removed: '<#008000>Successfully removed %amount% exp from %player% in system %system%'
+level-set: '<#008000>Successfully set %player%''s level to %amount% in system %system%'
+level-added: '<#008000>Successfully gave %player% %amount% levels in system %system%'
+level-removed: '<#008000>Successfully removed %amount% levels from %player% in system %system%'
+
+# /sl addSystem, /sl removeSystem, /sl setMultiplier. %player%, %system%, %multiplier%
+system-already-joined: '<#ff0000>Player is already in system %system%'
+system-added: '<#00ff00>Successfully added player to system %system%'
+system-removed: '<#00ff00>Successfully removed player from system %system%'
+multiplier-set: '<#008000>Successfully set %player%''s exp multiplier to %multiplier% in system %system%'
+
+# /sl pause and /sl unpause. %player%, %system%
+already-paused: '<#ff0000>%player%''s exp gains in %system% are already paused!'
+already-unpaused: '<#ff0000>%player%''s exp gains in %system% are already unpaused!'
+paused: '<#008000>Paused %player%''s exp gains in %system%'
+unpaused: '<#008000>Unpaused %player%''s exp gains in %system%'
+
+# /sl reload. %error%
+reload-start: '<#008000>Reloading Server Levels...'
+reload-done: '<#008000>Server Levels Reloaded'
+reload-failed: '<#ff0000>Failed to reload Server Levels: %error%'
+
+# /sl progress. %player%, %system%, %level%, %next_level%, %exp%, %next_level_exp%, %exp_to_next%, %percent%, %bar%
+progress-title-self: '<gray>------ <gold>Your %system% progress</gold> ------'
+progress-title-other: '<gray>------ <gold>%player%''s %system% progress</gold> ------'
+progress-bar-line: '<yellow>Level %level%</yellow> %bar% <yellow>Level %next_level%</yellow>'
+progress-exp: '<gray>Exp: <white>%exp%</white> / <white>%next_level_exp%</white> (<green>%percent%%</green>) · <white>%exp_to_next%</white> to next level'
+progress-bar-line-max: '<yellow>Level %level%</yellow> %bar% <gold>MAX</gold>'
+progress-exp-max: '<gray>Exp: <white>%exp%</white> · Max level reached'
+progress-paused-self: '<red>Your exp gains in %system% are paused</red>'
+progress-paused-other: '<red>%player%''s exp gains in %system% are paused</red>'
+# The progress bar is progress-bar-segments segments long, %filled% and %empty% are the segments
+progress-bar: '<dark_gray>[</dark_gray><green>%filled%</green><dark_gray>%empty%]</dark_gray>'
+progress-bar-segment: '|'
+progress-bar-segments: 40
+
+# /ls set, /ls save, /ls create. %system%, %setting%, %old%, %new%
+setting-changed: '<#008000>Changed %setting% of %system% from %old% to %new%'
+setting-changed-save-reminder: '<#808080>Use /ls save %system% to keep this change after a reload or restart'
+invalid-scalar-type: '<#ff0000>Invalid scalar type! Use LINEAR, EXPONENTIAL or SQRT'
+system-saved: '<#008000>Saved level system %system% to systems/%system%.yml'
+invalid-system-name: '<#ff0000>Level system names can only contain letters, numbers, and underscores!'
+system-name-taken: '<#ff0000>A level system named %system% already exists!'
+system-created: '<#008000>Created level system %system% with every setting at 0'
+system-created-help: "<#808080>Use <click:suggest_command:'/ls set %system% '><hover:show_text:'Click to start the command'><#ffff00>/ls set %system% \\<setting> \\<value></#ffff00></hover></click> to configure it, then <click:suggest_command:'/ls save %system%'><hover:show_text:'Click to start the command'><#ffff00>/ls save %system%</#ffff00></hover></click> to save it to systems/%system%.yml. Unsaved systems are removed on reload or restart."
+
+# /sl booster and /ls booster. %system%, %multiplier%, %duration%, %starts_in%, %count%, %position%, %remaining%
+booster-invalid-multiplier: '<#ff0000>The multiplier must be greater than 0!'
+booster-invalid-duration: '<#ff0000>Invalid duration! Combine d, h, m and s, e.g. 1h30m or 45s'
+booster-started: '<#008000>Started a %multiplier%x exp booster for %system% lasting %duration%'
+booster-queued: '<#008000>Queued a %multiplier%x exp booster for %system% lasting %duration%. It starts in %starts_in%, after %count% other boosters'
+booster-queued-one: '<#008000>Queued a %multiplier%x exp booster for %system% lasting %duration%. It starts in %starts_in%, after 1 other booster'
+boosters-none: '<#808080>There are no exp boosters for %system%'
+boosters-list-header: '<#008000>Exp boosters for %system%:'
+boosters-list-active: '<#ffff00>%position%. %multiplier%x, %remaining% left (active)'
+boosters-list-queued: '<#ffffff>%position%. %multiplier%x, lasts %duration%'
+boosters-list-footer: '<#808080>Use /sl booster %system% cancel \<position|all> to cancel boosters'
+booster-not-found: '<#ff0000>There is no booster at position %position%! Use /sl booster %system% list to see the boosters'
+booster-cancelled: '<#008000>Cancelled the %multiplier%x exp booster for %system%'
+booster-cancelled-next-started: '<#008000>Cancelled the %multiplier%x exp booster for %system%. The next booster has started'
+boosters-cancelled: '<#008000>Cancelled %count% exp boosters for %system%'
+boosters-cancelled-one: '<#008000>Cancelled 1 exp booster for %system%'

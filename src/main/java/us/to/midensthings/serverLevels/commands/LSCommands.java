@@ -12,16 +12,12 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.ScalarType;
+import us.to.midensthings.serverLevels.util.Messages;
 
 import java.util.Locale;
 import java.util.function.BiConsumer;
@@ -101,8 +97,7 @@ public class LSCommands {
                                 }
 
                                 levelSystem.saveToConfig();
-                                sender.sendMessage(Component.text("Saved level system " + levelSystem.getSystemName() + " to systems/" + levelSystem.getSystemName() + ".yml")
-                                        .color(TextColor.color(Color.GREEN.asRGB())));
+                                Messages.send(sender, "system-saved", "system", levelSystem.getSystemName());
                                 return Command.SINGLE_SUCCESS;
                             })))
             .then(Commands.literal("create").requires(source -> source.getSender().hasPermission("serverlevels.commands.create"))
@@ -113,14 +108,12 @@ public class LSCommands {
                                 String systemName = StringArgumentType.getString(ctx, "systemName");
 
                                 if (!LevelSystemRegistry.isValidSystemName(systemName)) {
-                                    sender.sendMessage(Component.text("Level system names can only contain letters, numbers, and underscores!")
-                                            .color(TextColor.color(Color.RED.asRGB())));
+                                    Messages.send(sender, "invalid-system-name");
                                     return Command.SINGLE_SUCCESS;
                                 }
                                 String existingName = findExistingSystemName(systemName);
                                 if (existingName != null) {
-                                    sender.sendMessage(Component.text("A level system named " + existingName + " already exists!")
-                                            .color(TextColor.color(Color.RED.asRGB())));
+                                    Messages.send(sender, "system-name-taken", "system", existingName);
                                     return Command.SINGLE_SUCCESS;
                                 }
 
@@ -128,20 +121,9 @@ public class LSCommands {
                                 plugin.getDatabaseManager().createTable(systemName);
                                 plugin.getLevelSystemRegistry().registerLevelSystem(LevelSystem.createEmpty(systemName));
 
-                                sender.sendMessage(Component.text("Created level system " + systemName + " with every setting at 0")
-                                        .color(TextColor.color(Color.GREEN.asRGB())));
-                                sender.sendMessage(Component.text("Use ")
-                                        .append(Component.text("/ls set " + systemName + " <setting> <value>")
-                                                .color(TextColor.color(Color.YELLOW.asRGB()))
-                                                .clickEvent(ClickEvent.suggestCommand("/ls set " + systemName + " "))
-                                                .hoverEvent(HoverEvent.showText(Component.text("Click to start the command"))))
-                                        .append(Component.text(" to configure it, then "))
-                                        .append(Component.text("/ls save " + systemName)
-                                                .color(TextColor.color(Color.YELLOW.asRGB()))
-                                                .clickEvent(ClickEvent.suggestCommand("/ls save " + systemName))
-                                                .hoverEvent(HoverEvent.showText(Component.text("Click to start the command"))))
-                                        .append(Component.text(" to save it to systems/" + systemName + ".yml. Unsaved systems are removed on reload or restart."))
-                                        .color(TextColor.color(Color.GRAY.asRGB())));
+                                Messages.send(sender, "system-created", "system", systemName);
+                                // The name is only letters, numbers and underscores, so it's safe inside the click actions
+                                Messages.send(sender, "system-created-help", "system", systemName);
                                 return Command.SINGLE_SUCCESS;
                             })
                     ))
@@ -192,8 +174,7 @@ public class LSCommands {
                             try {
                                 newType = ScalarType.valueOf(input.toUpperCase(Locale.ROOT));
                             } catch (IllegalArgumentException e) {
-                                ctx.getSource().getSender().sendMessage(Component.text("Invalid scalar type! Use LINEAR, EXPONENTIAL or SQRT")
-                                        .color(TextColor.color(Color.RED.asRGB())));
+                                Messages.send(ctx.getSource().getSender(), "invalid-scalar-type");
                                 return Command.SINGLE_SUCCESS;
                             }
 
@@ -206,11 +187,9 @@ public class LSCommands {
 
     private void sendChanged(CommandContext<CommandSourceStack> ctx, LevelSystem levelSystem, String setting, Object oldValue, Object newValue) {
         CommandSender sender = ctx.getSource().getSender();
-        // Component.text so message settings are shown as typed, not formatted
-        sender.sendMessage(Component.text("Changed " + setting + " of " + levelSystem.getSystemName() + " from " + oldValue + " to " + newValue)
-                .color(TextColor.color(Color.GREEN.asRGB())));
-        sender.sendMessage(Component.text("Use /ls save " + levelSystem.getSystemName() + " to keep this change after a reload or restart")
-                .color(TextColor.color(Color.GRAY.asRGB())));
+        // Values are escaped by Messages, so message settings are shown as typed, not formatted
+        Messages.send(sender, "setting-changed", "setting", setting, "system", levelSystem.getSystemName(), "old", oldValue, "new", newValue);
+        Messages.send(sender, "setting-changed-save-reminder", "system", levelSystem.getSystemName());
     }
 
     // A booster message typed in a command, where "default" means config.yml's message and "off" means no message
@@ -247,7 +226,7 @@ public class LSCommands {
         String systemName = StringArgumentType.getString(ctx, "levelSystem");
         LevelSystem levelSystem = plugin.getLevelSystemRegistry().getLevelSystem(systemName);
         if (levelSystem == null) {
-            ctx.getSource().getSender().sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(ctx.getSource().getSender(), "invalid-system");
         }
         return levelSystem;
     }

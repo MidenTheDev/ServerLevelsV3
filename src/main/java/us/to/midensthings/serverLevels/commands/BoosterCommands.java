@@ -8,13 +8,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.data.BoosterManager;
 import us.to.midensthings.serverLevels.util.DurationParser;
+import us.to.midensthings.serverLevels.util.Messages;
 
 import java.text.DecimalFormat;
 import java.time.Duration;
@@ -51,27 +49,27 @@ public final class BoosterCommands {
                         String durationInput = StringArgumentType.getString(ctx, "duration");
 
                         if (plugin.getLevelSystemRegistry().getLevelSystem(levelSystem) == null) {
-                            sender.sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+                            Messages.send(sender, "invalid-system");
                             return Command.SINGLE_SUCCESS;
                         }
                         if (multiplier <= 0) {
-                            sender.sendMessage(Component.text("The multiplier must be greater than 0!").color(TextColor.color(Color.RED.asRGB())));
+                            Messages.send(sender, "booster-invalid-multiplier");
                             return Command.SINGLE_SUCCESS;
                         }
                         Duration duration = DurationParser.parse(durationInput);
                         if (duration == null || duration.toSeconds() < 1) {
-                            sender.sendMessage(Component.text("Invalid duration! Combine d, h, m and s, e.g. 1h30m or 45s").color(TextColor.color(Color.RED.asRGB())));
+                            Messages.send(sender, "booster-invalid-duration");
                             return Command.SINGLE_SUCCESS;
                         }
 
                         BoosterManager.AddedBooster added = plugin.getBoosterManager().addBooster(levelSystem, multiplier, duration);
-                        String booster = DOUBLE_FORMAT.format(multiplier) + "x exp booster for " + levelSystem + " lasting " + DurationParser.format(duration);
+                        Object[] placeholders = {"multiplier", DOUBLE_FORMAT.format(multiplier), "system", levelSystem,
+                                "duration", DurationParser.format(duration), "starts_in", DurationParser.format(added.startsIn()),
+                                "count", added.queuePosition()};
                         if (added.queuePosition() == 0) {
-                            sender.sendMessage(Component.text("Started a " + booster).color(TextColor.color(Color.GREEN.asRGB())));
+                            Messages.send(sender, "booster-started", placeholders);
                         } else {
-                            sender.sendMessage(Component.text("Queued a " + booster + ". It starts in " + DurationParser.format(added.startsIn())
-                                    + ", after " + added.queuePosition() + " other booster" + (added.queuePosition() == 1 ? "" : "s"))
-                                    .color(TextColor.color(Color.GREEN.asRGB())));
+                            Messages.send(sender, added.queuePosition() == 1 ? "booster-queued-one" : "booster-queued", placeholders);
                         }
                         return Command.SINGLE_SUCCESS;
                         }))))
@@ -97,62 +95,56 @@ public final class BoosterCommands {
     private static void listBoosters(CommandContext<CommandSourceStack> ctx, String levelSystem) {
         CommandSender sender = ctx.getSource().getSender();
         if (plugin.getLevelSystemRegistry().getLevelSystem(levelSystem) == null) {
-            sender.sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(sender, "invalid-system");
             return;
         }
 
         List<BoosterManager.BoosterInfo> boosters = plugin.getBoosterManager().getBoosters(levelSystem);
         if (boosters.isEmpty()) {
-            sender.sendMessage(Component.text("There are no exp boosters for " + levelSystem).color(TextColor.color(Color.GRAY.asRGB())));
+            Messages.send(sender, "boosters-none", "system", levelSystem);
             return;
         }
 
-        sender.sendMessage(Component.text("Exp boosters for " + levelSystem + ":").color(TextColor.color(Color.GREEN.asRGB())));
+        Messages.send(sender, "boosters-list-header", "system", levelSystem);
         for (int i = 0; i < boosters.size(); i++) {
             BoosterManager.BoosterInfo booster = boosters.get(i);
-            String line = (i + 1) + ". " + DOUBLE_FORMAT.format(booster.multiplier()) + "x, "
-                    + (booster.active() ? DurationParser.format(booster.remaining()) + " left (active)" : "lasts " + DurationParser.format(booster.remaining()));
-            sender.sendMessage(Component.text(line).color(TextColor.color((booster.active() ? Color.YELLOW : Color.WHITE).asRGB())));
+            String remaining = DurationParser.format(booster.remaining());
+            Messages.send(sender, booster.active() ? "boosters-list-active" : "boosters-list-queued", "position", i + 1, "multiplier", DOUBLE_FORMAT.format(booster.multiplier()),
+                    "system", levelSystem, "remaining", remaining, "duration", remaining);
         }
-        sender.sendMessage(Component.text("Use /sl booster " + levelSystem + " cancel <position|all> to cancel boosters")
-                .color(TextColor.color(Color.GRAY.asRGB())));
+        Messages.send(sender, "boosters-list-footer", "system", levelSystem);
     }
 
     private static void cancelBooster(CommandContext<CommandSourceStack> ctx, String levelSystem, int position) {
         CommandSender sender = ctx.getSource().getSender();
         if (plugin.getLevelSystemRegistry().getLevelSystem(levelSystem) == null) {
-            sender.sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(sender, "invalid-system");
             return;
         }
 
         // Positions start at 1 to match /sl booster list
         BoosterManager.BoosterInfo cancelled = plugin.getBoosterManager().cancelBooster(levelSystem, position - 1);
         if (cancelled == null) {
-            sender.sendMessage(Component.text("There is no booster at position " + position + "! Use /sl booster " + levelSystem + " list to see the boosters")
-                    .color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(sender, "booster-not-found", "position", position, "system", levelSystem);
             return;
         }
-        String message = "Cancelled the " + DOUBLE_FORMAT.format(cancelled.multiplier()) + "x exp booster for " + levelSystem;
-        if (cancelled.active()) {
-            List<BoosterManager.BoosterInfo> remaining = plugin.getBoosterManager().getBoosters(levelSystem);
-            message += remaining.isEmpty() ? "" : ". The next booster has started";
-        }
-        sender.sendMessage(Component.text(message).color(TextColor.color(Color.GREEN.asRGB())));
+        boolean nextStarted = cancelled.active() && !plugin.getBoosterManager().getBoosters(levelSystem).isEmpty();
+        Messages.send(sender, nextStarted ? "booster-cancelled-next-started" : "booster-cancelled",
+                "multiplier", DOUBLE_FORMAT.format(cancelled.multiplier()), "system", levelSystem);
     }
 
     private static void cancelAllBoosters(CommandContext<CommandSourceStack> ctx, String levelSystem) {
         CommandSender sender = ctx.getSource().getSender();
         if (plugin.getLevelSystemRegistry().getLevelSystem(levelSystem) == null) {
-            sender.sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(sender, "invalid-system");
             return;
         }
 
         int cancelled = plugin.getBoosterManager().cancelAll(levelSystem);
         if (cancelled == 0) {
-            sender.sendMessage(Component.text("There are no exp boosters for " + levelSystem).color(TextColor.color(Color.GRAY.asRGB())));
+            Messages.send(sender, "boosters-none", "system", levelSystem);
             return;
         }
-        sender.sendMessage(Component.text("Cancelled " + cancelled + " exp booster" + (cancelled == 1 ? "" : "s") + " for " + levelSystem)
-                .color(TextColor.color(Color.GREEN.asRGB())));
+        Messages.send(sender, cancelled == 1 ? "boosters-cancelled-one" : "boosters-cancelled", "count", cancelled, "system", levelSystem);
     }
 }

@@ -11,9 +11,6 @@ import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.command.brigadier.argument.ArgumentTypes;
 import io.papermc.paper.command.brigadier.argument.resolvers.selector.PlayerSelectorArgumentResolver;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import org.bukkit.Color;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,6 +18,7 @@ import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.data.PlayerLoader;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
+import us.to.midensthings.serverLevels.util.Messages;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
 
 import java.math.RoundingMode;
@@ -65,9 +63,7 @@ public class SLCommands {
                                                 if (!setPlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully set "+p.getName()+"'s exp to "+DoubleArgumentType.getDouble(ctx,"expAmount")+" in system "+levelSystem)
-                                                        .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "exp-set", "player", p.getName(), "amount", DoubleArgumentType.getDouble(ctx,"expAmount"), "system", levelSystem);
 
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
@@ -87,7 +83,7 @@ public class SLCommands {
                                                 // sl exp add [player] [amount] [system]
                                                 CommandSender sender = ctx.getSource().getSender();
                                                 if (!sender.hasPermission("serverlevels.commands.add")) {
-                                                    sender.sendMessage(Component.text("You do not have permission to use this command!").color(TextColor.color(Color.RED.asRGB())));
+                                                    Messages.send(sender, "no-permission");
                                                     return Command.SINGLE_SUCCESS;
                                                 }
                                                 final PlayerSelectorArgumentResolver resolver = ctx.getArgument("player", PlayerSelectorArgumentResolver.class);
@@ -102,9 +98,7 @@ public class SLCommands {
                                                 if (!addPlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully gave "+p.getName()+" "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "exp-added", "player", p.getName(), "amount", DoubleArgumentType.getDouble(ctx,"expAmount"), "system", levelSystem);
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
@@ -135,9 +129,7 @@ public class SLCommands {
                                                 if (!removePlayerExp(ctx,p,DoubleArgumentType.getDouble(ctx,"expAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully removed "+DoubleArgumentType.getDouble(ctx,"expAmount")+" exp from "+p.getName()+" in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "exp-removed", "player", p.getName(), "amount", DoubleArgumentType.getDouble(ctx,"expAmount"), "system", levelSystem);
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
             .then(Commands.literal("level")
@@ -168,9 +160,7 @@ public class SLCommands {
                                                 if (!setPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully set "+p.getName()+"'s level to "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "level-set", "player", p.getName(), "amount", IntegerArgumentType.getInteger(ctx,"levelAmount"), "system", levelSystem);
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("add").requires(source -> source.getSender().hasPermission("serverlevels.commands.add"))
@@ -201,9 +191,7 @@ public class SLCommands {
                                                 if (!addPlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully gave "+p.getName()+" "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "level-added", "player", p.getName(), "amount", IntegerArgumentType.getInteger(ctx,"levelAmount"), "system", levelSystem);
                                                 return Command.SINGLE_SUCCESS;
                                             })))))
                     .then(Commands.literal("remove").requires(source -> source.getSender().hasPermission("serverlevels.commands.remove"))
@@ -235,9 +223,7 @@ public class SLCommands {
                                                 if (!removePlayerLevel(ctx,p,IntegerArgumentType.getInteger(ctx,"levelAmount"),levelSystem)) {
                                                     return Command.SINGLE_SUCCESS;
                                                 }
-                                                sender.sendMessage(
-                                                        Component.text("Successfully removed "+IntegerArgumentType.getInteger(ctx,"levelAmount")+" levels from "+p.getName()+" in system "+levelSystem)
-                                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                                Messages.send(sender, "level-removed", "player", p.getName(), "amount", IntegerArgumentType.getInteger(ctx,"levelAmount"), "system", levelSystem);
 
                                                 return Command.SINGLE_SUCCESS;
                                             }))))))
@@ -270,10 +256,10 @@ public class SLCommands {
                                     plugin.getDatabaseManager().initializePlayer(p.getUniqueId(), levelSystem);
                                     PlayerLoader.loadOnlinePlayer(p, List.of(system));
                                 } else {
-                                    sender.sendMessage(Component.text("Player is already in system "+ levelSystem).color(TextColor.color(Color.RED.asRGB())));
+                                    Messages.send(sender, "system-already-joined", "system", levelSystem);
                                 }
 
-                                sender.sendMessage(Component.text("Successfully added player to system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
+                                Messages.send(sender, "system-added", "player", p.getName(), "system", levelSystem);
                                 return Command.SINGLE_SUCCESS;
                             }))))
             .then(Commands.literal("removeSystem").requires(source -> source.getSender().hasPermission("serverlevels.commands.removesystem"))
@@ -304,7 +290,7 @@ public class SLCommands {
                                 plugin.getLevelSystemRegistry().getLevelSystem(levelSystem).getPlayerCache().deletePlayer(p.getUniqueId());
                                 plugin.getDatabaseManager().removePlayer(p,levelSystem);
 
-                                sender.sendMessage(Component.text("Successfully removed player from system "+ levelSystem).color(TextColor.color(Color.LIME.asRGB())));
+                                Messages.send(sender, "system-removed", "player", p.getName(), "system", levelSystem);
                                 return Command.SINGLE_SUCCESS;
                             }))))
             .then(Commands.literal("setMultiplier").requires(source -> source.getSender().hasPermission("serverlevels.commands.setMultiplier"))
@@ -339,25 +325,23 @@ public class SLCommands {
                                     // Not in the system yet, store it so it applies if they're added later
                                     p.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(systemName), PersistentDataType.DOUBLE,multiplier);
                                 }
-                                sender.sendMessage(
-                                        Component.text("Successfully set "+p.getName()+"'s exp multiplier to "+multiplier+" in system "+systemName)
-                                                .color(TextColor.color(Color.GREEN.asRGB())));
+                                Messages.send(sender, "multiplier-set", "player", p.getName(), "multiplier", multiplier, "system", systemName);
                                 return Command.SINGLE_SUCCESS;
                             })))))
             .then(Commands.literal("reload").requires(source -> source.getSender().hasPermission("serverlevels.commands.reload")).executes(ctx -> {
                 CommandSender sender = ctx.getSource().getSender();
 
-                sender.sendMessage(Component.text("Reloading Server Levels...").color(TextColor.color(Color.GREEN.asRGB())));
+                Messages.send(sender, "reload-start");
 
                 // Files and the database are reloaded in the background, so the server doesn't freeze while it runs
                 plugin.reloadAsync().whenComplete((ignored, error) -> {
                     if (error != null) {
                         Throwable cause = error instanceof CompletionException ? error.getCause() : error;
                         plugin.getLogger().log(Level.SEVERE, "Failed to reload Server Levels", cause);
-                        sender.sendMessage(Component.text("Failed to reload Server Levels: " + cause.getMessage()).color(TextColor.color(Color.RED.asRGB())));
+                        Messages.send(sender, "reload-failed", "error", cause.getMessage());
                         return;
                     }
-                    sender.sendMessage(Component.text("Server Levels Reloaded").color(TextColor.color(Color.GREEN.asRGB())));
+                    Messages.send(sender, "reload-done");
                 });
                 return Command.SINGLE_SUCCESS;
             }))
@@ -373,7 +357,7 @@ public class SLCommands {
                             .executes(ctx -> {
                                 CommandSender sender = ctx.getSource().getSender();
                                 if (!(sender instanceof Player)) {
-                                    sender.sendMessage(MiniMessage.miniMessage().deserialize("<red>You must be a player to use this command!"));
+                                    Messages.send(sender, "players-only");
                                     return Command.SINGLE_SUCCESS;
                                 }
 
@@ -448,23 +432,20 @@ public class SLCommands {
 
         CommandSender sender = ctx.getSource().getSender();
         if (lp.isPaused() == paused) {
-            sender.sendMessage(Component.text(p.getName() + "'s exp gains in " + levelSystem + " are already " + (paused ? "paused" : "unpaused") + "!")
-                    .color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(sender, paused ? "already-paused" : "already-unpaused", "player", p.getName(), "system", levelSystem);
             return;
         }
 
         lp.setPaused(paused);
         lp.save();
-        sender.sendMessage(Component.text((paused ? "Paused " : "Unpaused ") + p.getName() + "'s exp gains in " + levelSystem)
-                .color(TextColor.color(Color.GREEN.asRGB())));
+        Messages.send(sender, paused ? "paused" : "unpaused", "player", p.getName(), "system", levelSystem);
     }
 
 
     // Number of segments in the progress bar, each one is 2.5% of a level
-    private static final int PROGRESS_BAR_LENGTH = 40;
-
     /***
-     * Sends the sender a progress bar showing how far the player is from their next level in the system
+     * Sends the sender a progress bar showing how far the player is from their next level in the system.
+     * The layout is set in messages.yml
      */
     private void displayProgress(CommandContext<CommandSourceStack> ctx, Player p, LevelSystem system) {
         if (!checkValidCommand(ctx,p,system)) return;
@@ -486,31 +467,28 @@ public class SLCommands {
         double nextLevelExp = lp.getNextLevelExp();
         double progress = lp.getLevelProgress();
         // Round down so the bar never looks full before the player actually levels up
-        int filledSegments = (int) Math.floor(progress * PROGRESS_BAR_LENGTH);
+        int segments = Math.max(1, Messages.getInt("progress-bar-segments", 40));
+        String segment = Messages.getRaw("progress-bar-segment");
+        int filledSegments = (int) Math.floor(progress * segments);
         int percent = (int) Math.floor(progress * 100);
+        Component bar = Messages.get("progress-bar", "filled", segment.repeat(filledSegments), "empty", segment.repeat(segments - filledSegments));
+        if (bar == null) {
+            bar = Component.empty();
+        }
 
-        String bar = "<dark_gray>[</dark_gray><green>" + "|".repeat(filledSegments) + "</green>"
-                + "<dark_gray>" + "|".repeat(PROGRESS_BAR_LENGTH - filledSegments) + "]</dark_gray>";
-
-        // Player and system names can only contain letters, numbers and underscores, so they're safe to put in MiniMessage
-        String title = (sender == p ? "Your" : p.getName() + "'s") + " " + system.getSystemName() + " progress";
-
-        sender.sendMessage(MiniMessage.miniMessage().deserialize("<gray>------ <gold>" + title + "</gold> ------"));
+        Object[] placeholders = {"player", p.getName(), "system", system.getSystemName(), "level", level, "next_level", level + 1,
+                "exp", df.format(exp), "next_level_exp", df.format(nextLevelExp), "exp_to_next", df.format(nextLevelExp - exp),
+                "percent", percent, "bar", bar};
+        Messages.send(sender, sender == p ? "progress-title-self" : "progress-title-other", placeholders);
         if (maxLevel) {
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(
-                    "<yellow>Level " + level + "</yellow> " + bar + " <gold>MAX</gold>"));
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(
-                    "<gray>Exp: <white>" + df.format(exp) + "</white> · Max level reached"));
+            Messages.send(sender, "progress-bar-line-max", placeholders);
+            Messages.send(sender, "progress-exp-max", placeholders);
         } else {
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(
-                    "<yellow>Level " + level + "</yellow> " + bar + " <yellow>Level " + (level + 1) + "</yellow>"));
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(
-                    "<gray>Exp: <white>" + df.format(exp) + "</white> / <white>" + df.format(nextLevelExp) + "</white>"
-                            + " (<green>" + percent + "%</green>) · <white>" + df.format(nextLevelExp - exp) + "</white> to next level"));
+            Messages.send(sender, "progress-bar-line", placeholders);
+            Messages.send(sender, "progress-exp", placeholders);
         }
         if (lp.isPaused()) {
-            sender.sendMessage(MiniMessage.miniMessage().deserialize(
-                    "<red>" + (sender == p ? "Your" : p.getName() + "'s") + " exp gains in " + system.getSystemName() + " are paused</red>"));
+            Messages.send(sender, sender == p ? "progress-paused-self" : "progress-paused-other", placeholders);
         }
     }
 
@@ -592,7 +570,7 @@ public class SLCommands {
     private LeveledPlayer getLeveledPlayerOrNotify(CommandContext<CommandSourceStack> ctx, Player p, String levelSystem) {
         LeveledPlayer lp = LeveledPlayer.fromPlayer(p,levelSystem);
         if (lp == null) {
-            ctx.getSource().getSender().sendMessage(Component.text(p.getName()+" is not in level system "+levelSystem+"!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(ctx.getSource().getSender(), "not-in-system", "player", p.getName(), "system", levelSystem);
         }
         return lp;
     }
@@ -600,12 +578,12 @@ public class SLCommands {
     private boolean checkValidCommand(CommandContext<CommandSourceStack> ctx,Player p, LevelSystem ls) {
         if (p == null) {
             // Player hasn't been on server before, won't be in database.
-            ctx.getSource().getSender().sendMessage(Component.text("Invalid Player!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(ctx.getSource().getSender(), "invalid-player");
             return false;
         }
         if (ls == null) {
             // no level system found
-            ctx.getSource().getSender().sendMessage(Component.text("Invalid Level System!").color(TextColor.color(Color.RED.asRGB())));
+            Messages.send(ctx.getSource().getSender(), "invalid-system");
             return false;
         }
         return true;
