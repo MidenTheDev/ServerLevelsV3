@@ -51,6 +51,8 @@ public class LSCommands {
                                     LevelSystem::getBaseExpRequirement, LevelSystem::setBaseExpRequirement))
                             .then(setting("expRequirementMultiplier", DoubleArgumentType.doubleArg(0), Double.class,
                                     LevelSystem::getExpRequirementMultiplier, LevelSystem::setExpRequirementMultiplier))
+                            .then(setting("maxExpRequirement", DoubleArgumentType.doubleArg(0), Double.class,
+                                    LevelSystem::getMaxExpRequirement, LevelSystem::setMaxExpRequirement))
                             .then(scalarTypeSetting())
 
                             .then(setting("expOnChat", DoubleArgumentType.doubleArg(), Double.class,

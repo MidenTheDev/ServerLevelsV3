@@ -54,6 +54,9 @@ exp-requirements:
   exp-scalar-type: EXPONENTIAL
   base-exp-req: 8.0
   exp-req-multiplier: 1.1
+  # The most exp a single level can cost, whatever the scalar type. Any level that would cost more costs exactly this much
+  # instead, so the curve flattens out once it reaches this. 0 for no limit
+  max-exp-req: 0.0
 
 # How much exp each mob gives in this system. Mobs not listed use exp-gain.on-mobkill.
 # Besides mob names, you can use entity tags like '#minecraft:skeletons' and wildcards like '*_SPIDER'.

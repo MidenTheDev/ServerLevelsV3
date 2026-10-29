@@ -51,6 +51,8 @@ public class LevelSystem {
     private double expRequirementMultiplier;
     // ScalarType for how the multiplier is applied to the exp requirements
     private ScalarType scalarType;
+    // The most exp a single level can cost, 0 for no limit
+    private double maxExpRequirement;
 
     // Exp gain on event
     private double expOnChat;
@@ -181,6 +183,7 @@ public class LevelSystem {
 
         baseExpRequirement = levelSystemConf.getDouble(systemName+".exp-requirements.base-exp-req");
         expRequirementMultiplier = levelSystemConf.getDouble(systemName+".exp-requirements.exp-req-multiplier");
+        maxExpRequirement = Math.max(0, levelSystemConf.getDouble(systemName+".exp-requirements.max-exp-req"));
 
         autoAddPlayers = levelSystemConf.getBoolean(systemName+".auto-add-players");
 
@@ -320,6 +323,7 @@ public class LevelSystem {
         file.set("exp-requirements.exp-req-multiplier",expRequirementMultiplier);
 
         file.set("exp-requirements.exp-scalar-type",scalarType.toString());
+        file.set("exp-requirements.max-exp-req",maxExpRequirement);
 
         file.set("exp-gain-message",expGainMsg);
 
@@ -353,25 +357,43 @@ public class LevelSystem {
     }
 
     // Precomputes getExpRequirement for every level up to max level, so level checks don't loop on every exp gain.
-    // Each entry is built from the previous one using the same steps as calculateExpRequirement, so the values are identical
+    // Uses the same steps as calculateExpRequirement, so the values are identical
     private void rebuildExpRequirementTable() {
         int size = Math.clamp((long) maxLevel + 1, 1, MAX_PRECOMPUTED_LEVELS);
         double[] table = new double[size];
-        table[0] = baseExpRequirement;
+        table[0] = capLevelCost(baseExpRequirement);
 
         double expLevelReq = baseExpRequirement;
         for (int level = 1; level < size; level++) {
-            if (scalarType == ScalarType.EXPONENTIAL) {
-                expLevelReq = expLevelReq * expRequirementMultiplier;
-                table[level] = table[level - 1] + expLevelReq;
-            } else if (scalarType == ScalarType.SQRT) {
-                table[level] = table[level - 1] + sqrtLevelCost(level);
-            } else {
-                // assume linear
-                table[level] = table[level - 1] + (level * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement);
-            }
+            expLevelReq = nextLevelCost(level, expLevelReq);
+            table[level] = table[level - 1] + capLevelCost(expLevelReq);
         }
         expRequirementTable = table;
+    }
+
+    private double calculateExpRequirement(int level) {
+        if (level < 0) {
+            return 0;
+        }
+        double expReq = capLevelCost(baseExpRequirement);
+        double expLevelReq = baseExpRequirement;
+        for (int calcLevel = 1; calcLevel <= level; calcLevel++) {
+            expLevelReq = nextLevelCost(calcLevel, expLevelReq);
+            expReq += capLevelCost(expLevelReq);
+        }
+        return expReq;
+    }
+
+    // The exp to go from level to level + 1, before max-exp-req. previousCost is the previous level's cost, also before the limit,
+    // so EXPONENTIAL keeps its curve if max-exp-req is changed later
+    private double nextLevelCost(int level, double previousCost) {
+        if (scalarType == ScalarType.EXPONENTIAL) {
+            return previousCost * expRequirementMultiplier;
+        } else if (scalarType == ScalarType.SQRT) {
+            return sqrtLevelCost(level);
+        }
+        // assume linear
+        return level * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement;
     }
 
     // SQRT: the exp to go from a level to the next is base + base * multiplier * sqrt(level).
@@ -380,36 +402,9 @@ public class LevelSystem {
         return baseExpRequirement + baseExpRequirement * expRequirementMultiplier * Math.sqrt(level);
     }
 
-    private double calculateExpRequirement(int level) {
-        if (level==0) {
-            return baseExpRequirement;
-        }
-        if (level < 0) {
-            return 0;
-        }
-        double expLevelReq;
-        double expReq = 0;
-        if (scalarType == ScalarType.EXPONENTIAL) {
-            expLevelReq = baseExpRequirement;
-            expReq = baseExpRequirement;
-            for (int calcLevel = 0;calcLevel<level;calcLevel++) {
-                expLevelReq = expLevelReq*expRequirementMultiplier;
-                expReq += expLevelReq;
-            }
-        } else if (scalarType == ScalarType.SQRT){
-            for (int calcLevel = 0;calcLevel<=level;calcLevel++) {
-                expReq += sqrtLevelCost(calcLevel);
-            }
-        } else {
-            // assume linear
-            // <= so the cost of the current level is included, matching the exponential formula
-            for (int calcLevel = 0;calcLevel<=level;calcLevel++) {
-                expLevelReq = calcLevel * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement;
-                expReq += expLevelReq;
-            }
-
-        }
-        return expReq;
+    // Applies max-exp-req to a single level's cost
+    private double capLevelCost(double cost) {
+        return maxExpRequirement > 0 ? Math.min(cost, maxExpRequirement) : cost;
     }
 
     public void sendLevelupMessage(Player p, int level) {
@@ -720,6 +715,21 @@ public class LevelSystem {
 
     public void setExpRequirementMultiplier(double expRequirementMultiplier) {
         this.expRequirementMultiplier = expRequirementMultiplier;
+        rebuildExpRequirementTable();
+    }
+
+    /***
+     * @return the most exp a single level can cost, 0 if there's no limit
+     */
+    public double getMaxExpRequirement() {
+        return maxExpRequirement;
+    }
+
+    /***
+     * @param maxExpRequirement the most exp a single level can cost, 0 for no limit
+     */
+    public void setMaxExpRequirement(double maxExpRequirement) {
+        this.maxExpRequirement = Math.max(0, maxExpRequirement);
         rebuildExpRequirementTable();
     }
 

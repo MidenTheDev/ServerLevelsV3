@@ -37,6 +37,8 @@ exp-requirements:
   exp-scalar-type: LINEAR
   base-exp-req: 8.0
   exp-req-multiplier: 0.5
+  # The most exp a single level can cost. 0 for no limit, see default.yml
+  max-exp-req: 0.0
 
 # See default.yml for everything the blocks section can use: tags, wildcards, and ItemsAdder or CraftEngine blocks
 blocks:
