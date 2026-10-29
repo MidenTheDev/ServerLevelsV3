@@ -41,6 +41,7 @@ public final class ServerLevels extends JavaPlugin {
     // Used when autosave-interval is missing or invalid
     private static final String DEFAULT_AUTOSAVE_INTERVAL = "5m";
     private BukkitTask autosaveTask;
+    private volatile boolean debugMode = false;
     private final AtomicBoolean reloading = new AtomicBoolean(false);
 
     Logger logger = this.getLogger();
@@ -91,6 +92,7 @@ public final class ServerLevels extends JavaPlugin {
         boosterManager.start();
         expRateLimiter = new ExpRateLimiter();
         expRateLimiter.load(getConfig(), levelSystemsConf);
+        loadDebugMode();
 
         // Level systems must exist before the join listener can load players into them
         registerLevelSystems();
@@ -204,6 +206,7 @@ public final class ServerLevels extends JavaPlugin {
                     registerLevelSystems();
                     startAutosave();
                     expRateLimiter.load(getConfig(), levelSystemsConf);
+                    loadDebugMode();
                 }, mainThread)
                 .whenComplete((ignored, error) -> reloading.set(false));
     }
@@ -250,6 +253,32 @@ public final class ServerLevels extends JavaPlugin {
     /***
      * Starts the autosave timer using autosave-interval from config.yml, replacing the current timer if there is one
      */
+    /***
+     * Reads debug-mode from config.yml
+     */
+    public void loadDebugMode() {
+        debugMode = getConfig().getBoolean("debug-mode", false);
+        if (debugMode) {
+            logger.info("Debug mode is on, exp gains and ProjectKorra ability uses will be logged");
+        }
+    }
+
+    /***
+     * @return whether debug-mode is on in config.yml
+     */
+    public boolean isDebugMode() {
+        return debugMode;
+    }
+
+    /***
+     * Logs the message when debug-mode is on in config.yml
+     */
+    public void debug(String message) {
+        if (debugMode) {
+            logger.info("[Debug] " + message);
+        }
+    }
+
     public void startAutosave() {
         if (autosaveTask != null) {
             autosaveTask.cancel();

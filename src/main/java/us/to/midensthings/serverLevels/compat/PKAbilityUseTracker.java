@@ -290,7 +290,7 @@ public class PKAbilityUseTracker implements Listener {
             rollTick();
             pendingConstructorCredits.add(player.getUniqueId() + ":" + ability.getClass().getName());
         }
-        countUse(player, creditedName(ability, override));
+        countUse(player, creditedName(ability, override), "cooldown " + cooldownName);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -340,7 +340,7 @@ public class PKAbilityUseTracker implements Listener {
                 return;
             }
             if (player.isOnline() && creditedInstances.add(ability.getId())) {
-                countUse(player, creditedName(ability, override));
+                countUse(player, creditedName(ability, override), "start");
             }
         });
     }
@@ -377,7 +377,7 @@ public class PKAbilityUseTracker implements Listener {
         Override override = getOverride(ability);
         boolean used = usedWhileRunning.remove(id) || wasUsed(ability, override);
         if (player != null && player.isOnline() && used) {
-            countUse(player, creditedName(ability, override));
+            countUse(player, creditedName(ability, override), "end");
         }
     }
 
@@ -451,9 +451,10 @@ public class PKAbilityUseTracker implements Listener {
     }
 
     // Counts a use, at most once per player and ability each tick
-    private void countUse(Player player, String abilityName) {
+    private void countUse(Player player, String abilityName, String detectedBy) {
         rollTick();
         if (countedThisTick.add(player.getUniqueId() + ":" + abilityName.toLowerCase(Locale.ROOT))) {
+            plugin.debug(player.getName() + " used " + abilityName + " (detected by its " + detectedBy + ")");
             onUse.accept(player, abilityName);
         }
     }

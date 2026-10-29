@@ -92,6 +92,7 @@ public class LeveledPlayer {
      */
     public boolean gainExp(double expToAdd) {
         if (paused) {
+            plugin.debug(getPlayerName() + " didn't get " + expToAdd + " exp in " + system + ", their exp gains are paused");
             return false;
         }
         incrementExp(expToAdd);
@@ -229,6 +230,12 @@ public class LeveledPlayer {
         player.getPersistentDataContainer().set(NamespacedKeys.generatePlayerExpMultiplierKey(this.getSystemName()), PersistentDataType.DOUBLE,expMultiplier);
     }
 
+    // The player's name for log messages, or their uuid if they're offline
+    private String getPlayerName() {
+        Player player = getPlayer();
+        return player != null ? player.getName() : uuid.toString();
+    }
+
     public Player getPlayer() {
         return Bukkit.getPlayer(uuid);
     }
@@ -241,7 +248,12 @@ public class LeveledPlayer {
     public void incrementExp(double expToAdd) {
         LevelSystem ls = getSystem();
         // An active booster multiplies the total, so a 2x booster doubles whatever the player would normally get
-        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier)*plugin.getBoosterManager().getMultiplier(system);
+        double boosterMultiplier = plugin.getBoosterManager().getMultiplier(system);
+        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier)*boosterMultiplier;
+        if (plugin.isDebugMode()) {
+            plugin.debug(getPlayerName() + " gained " + expGained + " exp in " + system + " (base " + expToAdd + ", system multiplier "
+                    + ls.getExpGainMultiplier() + " + player multiplier " + expMultiplier + ", booster x" + boosterMultiplier + ")");
+        }
         this.exp += expGained;
         dirty = true;
         // Check if exp is under zero, and if it is, set it to zero

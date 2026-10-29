@@ -14,6 +14,7 @@ debug-mode: false
 # Turn this on when you find a bug and try and cause the bug again.
 # Then, report the bug on discord and/or github.
 # You can report bugs without this, but the debug entries make my life easier.
+# Logs every exp gain with its multipliers, each ProjectKorra ability use and how it was detected, and rate limiter reductions.
 
 check-for-updates: true
 # Checks Modrinth on startup and logs a message if a newer release is available.

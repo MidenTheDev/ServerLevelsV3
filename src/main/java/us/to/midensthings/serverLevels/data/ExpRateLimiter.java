@@ -74,12 +74,14 @@ public class ExpRateLimiter {
      */
     public final class Gain {
         private final Source source;
+        private final String key;
         private final long time;
         // Times of earlier gains with the same key, oldest first
         private final long[] earlierTimes;
 
-        private Gain(Source source, long time, long[] earlierTimes) {
+        private Gain(Source source, String key, long time, long[] earlierTimes) {
             this.source = source;
+            this.key = key;
             this.time = time;
             this.earlierTimes = earlierTimes;
         }
@@ -98,7 +100,12 @@ public class ExpRateLimiter {
                     repeats++;
                 }
             }
-            return s.multiplier(repeats);
+            double multiplier = s.multiplier(repeats);
+            if (multiplier < 1) {
+                plugin.debug("Rate limiter: " + key + " repeated " + repeats + " times in " + DurationParser.format(Duration.ofMillis(s.windowMillis()))
+                        + ", exp in " + system.getSystemName() + " multiplied by " + multiplier);
+            }
+            return multiplier;
         }
     }
 
@@ -199,7 +206,7 @@ public class ExpRateLimiter {
         long now = System.currentTimeMillis();
         if (longestWindowMillis == 0) {
             // No system limits anything, nothing to record
-            return new Gain(source, now, new long[0]);
+            return new Gain(source, source.getConfigKey() + ":" + key, now, new long[0]);
         }
 
         ArrayDeque<Long> times = recentGains
@@ -215,7 +222,7 @@ public class ExpRateLimiter {
         while (times.size() > mostRepeatsNeeded) {
             times.pollFirst();
         }
-        return new Gain(source, now, earlier);
+        return new Gain(source, source.getConfigKey() + ":" + key, now, earlier);
     }
 
     /***
