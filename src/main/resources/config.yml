@@ -8,6 +8,8 @@ mysql:
   database: 'sldatabase'
   username: example
   password: elpmaxe
+  pool-size: 10 # How many connections to keep open to the MySQL server
+  ssl-mode: PREFERRED # DISABLED, PREFERRED, REQUIRED, VERIFY_CA or VERIFY_IDENTITY
 
 
 debug-mode: false
@@ -47,4 +49,8 @@ rate-limiter:
 #   sources: which kinds of exp are limited. block-break is off by default, since mining the same block is normal play.
 # These are the defaults for every level system. A system can override any of them with its own rate-limiter section in levelsystems.yml.
 
-config-version: '2.3'
+table-prefix: sys_
+# Put in front of each level system's name for its database table, e.g. sys_mining. Use a different prefix for each server when
+# several servers share one MySQL database. Changing it starts new, empty tables, it does not rename existing ones.
+
+config-version: '2.4'

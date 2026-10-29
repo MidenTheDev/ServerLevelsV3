@@ -37,14 +37,30 @@ public class DatabaseManager {
     public record SystemLoad(String system, boolean autoAdd, double expMultiplier) {}
 
 
+    private static final String DEFAULT_TABLE_PREFIX = "sys_";
+    private static final java.util.regex.Pattern VALID_TABLE_PREFIX = java.util.regex.Pattern.compile("[A-Za-z0-9_]*");
+    // Put in front of each level system's name for its table name
+    private volatile String tablePrefix = DEFAULT_TABLE_PREFIX;
+
+    /***
+     * @return the database table that holds the level system's player data
+     */
+    public String getTableName(String system) {
+        return tablePrefix + system;
+    }
+
     // Connection settings from config.yml, read on the main thread so the database thread never touches the live config
-    private record DatabaseSettings(String dataFormat, String host, String database, String username, String password) {
+    private record DatabaseSettings(String dataFormat, String host, String database, String username, String password,
+                                    int poolSize, String sslMode, String tablePrefix) {
         static DatabaseSettings fromConfig(FileConfiguration config, String dataFormat) {
             return new DatabaseSettings(dataFormat,
                     config.getString("mysql.host"),
                     config.getString("mysql.database"),
                     config.getString("mysql.username"),
-                    config.getString("mysql.password"));
+                    config.getString("mysql.password"),
+                    config.getInt("mysql.pool-size", 10),
+                    config.getString("mysql.ssl-mode", "PREFERRED"),
+                    config.getString("table-prefix", DEFAULT_TABLE_PREFIX));
         }
 
         static DatabaseSettings fromConfig(FileConfiguration config) {
@@ -57,6 +73,15 @@ public class DatabaseManager {
     }
 
     private void setupConnectionPool(DatabaseSettings settings) {
+        // The prefix goes directly into table names, so only allow safe identifier characters
+        String prefix = settings.tablePrefix() == null ? DEFAULT_TABLE_PREFIX : settings.tablePrefix();
+        if (!VALID_TABLE_PREFIX.matcher(prefix).matches()) {
+            plugin.getLogger().warning("Invalid table-prefix '" + prefix + "' in config.yml, using " + DEFAULT_TABLE_PREFIX
+                    + ". It can only contain letters, numbers and underscores");
+            prefix = DEFAULT_TABLE_PREFIX;
+        }
+        tablePrefix = prefix;
+
         HikariConfig hkconfig = new HikariConfig();
         this.dataFormat = settings.dataFormat().toLowerCase(Locale.ROOT);
         switch (this.dataFormat) {
@@ -64,7 +89,11 @@ public class DatabaseManager {
                 hkconfig.setJdbcUrl("jdbc:mysql://" + settings.host() + "/" + settings.database()); // Address of your running MySQL database
                 hkconfig.setUsername(settings.username()); // Username
                 hkconfig.setPassword(settings.password()); // Password
-                hkconfig.setMaximumPoolSize(10); // Pool size defaults to 10
+                hkconfig.setMaximumPoolSize(Math.max(1, settings.poolSize()));
+                // Passed straight to the MySQL driver: DISABLED, PREFERRED, REQUIRED, VERIFY_CA or VERIFY_IDENTITY
+                if (settings.sslMode() != null && !settings.sslMode().isBlank()) {
+                    hkconfig.addDataSourceProperty("sslMode", settings.sslMode().trim().toUpperCase(Locale.ROOT));
+                }
                 break;
             case ("sqlite"):
                 hkconfig.setDriverClassName("org.sqlite.JDBC");
@@ -159,7 +188,8 @@ public class DatabaseManager {
     private static final int CURRENT_SCHEMA_VERSION = 2;
     // Stores the schema version of each level system table
     private static final String SCHEMA_VERSION_TABLE = "sl_schema_version";
-    // Temporary tables used while migrating. A different prefix from sys_, so they can't clash with a level system's table
+    // Temporary tables used while migrating, named after the full table name. A different prefix from the table prefix, so they
+    // can't clash with a level system's table
     private static final String MIGRATION_NEW_PREFIX = "slmig_new_";
     private static final String MIGRATION_OLD_PREFIX = "slmig_old_";
 
@@ -190,7 +220,7 @@ public class DatabaseManager {
             return;
         }
         // sys_ prefix for table names for consistency
-        String table = "sys_" + system;
+        String table = getTableName(system);
 
         try {
             recoverInterruptedMigration(connection, system);
@@ -221,9 +251,9 @@ public class DatabaseManager {
      * the row counts are checked, then the new table replaces the old one.
      */
     private void migrateTable(Connection connection, String system, int fromVersion) throws SQLException {
-        String table = "sys_" + system;
-        String newTable = MIGRATION_NEW_PREFIX + system;
-        String oldTable = MIGRATION_OLD_PREFIX + system;
+        String table = getTableName(system);
+        String newTable = MIGRATION_NEW_PREFIX + table;
+        String oldTable = MIGRATION_OLD_PREFIX + table;
         plugin.getLogger().info("Migrating table " + table + " from database schema version " + fromVersion + " to " + CURRENT_SCHEMA_VERSION + "...");
 
         try (Statement stmt = connection.createStatement()) {
@@ -261,9 +291,9 @@ public class DatabaseManager {
      * Cleans up after a migration that was interrupted, e.g. by a crash, while swapping the tables
      */
     private void recoverInterruptedMigration(Connection connection, String system) throws SQLException {
-        String table = "sys_" + system;
-        String newTable = MIGRATION_NEW_PREFIX + system;
-        String oldTable = MIGRATION_OLD_PREFIX + system;
+        String table = getTableName(system);
+        String newTable = MIGRATION_NEW_PREFIX + table;
+        String oldTable = MIGRATION_OLD_PREFIX + table;
         if (!tableExists(connection, oldTable)) {
             // The swap never started. A leftover copy is cleared when the migration runs again
             return;
@@ -423,13 +453,13 @@ public class DatabaseManager {
     private void insertIfMissing(Connection connection, UUID uuid, String system) throws SQLException {
         // Generate default player stats for the level system.
         String createDefaultStats = switch (dataFormat) {
-            case ("mysql") -> "INSERT IGNORE INTO sys_" + system + " (uuid, exp, level) "
+            case ("mysql") -> "INSERT IGNORE INTO " + getTableName(system) + " (uuid, exp, level) "
                     + "VALUES(?, 0.0, 0)";
-            case ("sqlite") -> "INSERT OR IGNORE INTO sys_" + system + " (uuid, exp, level) "
+            case ("sqlite") -> "INSERT OR IGNORE INTO " + getTableName(system) + " (uuid, exp, level) "
                     + "VALUES(?, 0.0, 0)";
             default ->
                 // Default is h2
-                    "MERGE INTO sys_" + system + " t USING (SELECT CAST(? AS CHAR(36)) AS uuid) s "
+                    "MERGE INTO " + getTableName(system) + " t USING (SELECT CAST(? AS CHAR(36)) AS uuid) s "
                             + "ON t.uuid = s.uuid "
                             + "WHEN NOT MATCHED THEN INSERT (uuid, exp, level) VALUES (s.uuid, 0.0, 0)";
         };
@@ -443,7 +473,7 @@ public class DatabaseManager {
     // Returns null if the player has no record in the system
     private LeveledPlayer selectPlayer(Connection connection, UUID uuid, String system, double expMultiplier) throws SQLException {
         // select player all data from the table according to player's uuid
-        String selectPlayerData = "SELECT uuid,exp,level,paused FROM sys_" + system + " WHERE uuid=?";
+        String selectPlayerData = "SELECT uuid,exp,level,paused FROM " + getTableName(system) + " WHERE uuid=?";
         try (PreparedStatement pstmt = connection.prepareStatement(selectPlayerData)) {
             pstmt.setString(1, uuid.toString());
             try (ResultSet resultSet = pstmt.executeQuery()) {
@@ -471,7 +501,7 @@ public class DatabaseManager {
 
         runOnDbThread(() -> {
             try (Connection connection = dataSource.getConnection()) {
-                String updatePlayerData = "UPDATE sys_" + system + " SET exp=?, level=?, paused=? WHERE uuid=?";
+                String updatePlayerData = "UPDATE " + getTableName(system) + " SET exp=?, level=?, paused=? WHERE uuid=?";
                 try (PreparedStatement pstmt = connection.prepareStatement(updatePlayerData)) {
                     pstmt.setDouble(1, exp);
                     pstmt.setInt(2, level);
@@ -498,7 +528,7 @@ public class DatabaseManager {
         runOnDbThread(() -> {
             // Get connection
             try (Connection connection = dataSource.getConnection()) {
-                String deleteRecord = "DELETE FROM sys_" + levelSystem + " WHERE uuid = ?";
+                String deleteRecord = "DELETE FROM " + getTableName(levelSystem) + " WHERE uuid = ?";
 
                 try (PreparedStatement pstmt = connection.prepareStatement(deleteRecord)) {
                     pstmt.setString(1, uuid.toString());

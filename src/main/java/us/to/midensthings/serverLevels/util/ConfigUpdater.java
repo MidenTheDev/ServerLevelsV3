@@ -21,7 +21,8 @@ public final class ConfigUpdater {
             new Migration("2.1", ConfigUpdater::addAutosaveInterval),
             new Migration("2.2", ConfigUpdater::addRateLimiter),
             // Only changes config-version itself from a number to text, see update
-            new Migration("2.3", config -> {})
+            new Migration("2.3", config -> {}),
+            new Migration("2.4", ConfigUpdater::addDatabaseOptions)
     );
 
     private ConfigUpdater() {}
@@ -110,6 +111,35 @@ public final class ConfigUpdater {
                 "  minimum-multiplier: exp never drops below this fraction of normal. 0 lets it drop to no exp at all.",
                 "  sources: which kinds of exp are limited. block-break is off by default, since mining the same block is normal play.",
                 "These are the defaults for every level system. A system can override any of them with its own rate-limiter section in levelsystems.yml.",
+                null // blank line
+        )));
+    }
+
+    // 2.4: mysql.pool-size, mysql.ssl-mode, table-prefix
+    private static void addDatabaseOptions(FileConfiguration config) {
+        if (!config.contains("mysql.pool-size", true)) {
+            config.set("mysql.pool-size", 10);
+            config.setInlineComments("mysql.pool-size", List.of("How many connections to keep open to the MySQL server"));
+        }
+        if (!config.contains("mysql.ssl-mode", true)) {
+            config.set("mysql.ssl-mode", "PREFERRED");
+            config.setInlineComments("mysql.ssl-mode", List.of("DISABLED, PREFERRED, REQUIRED, VERIFY_CA or VERIFY_IDENTITY"));
+        }
+        if (config.contains("table-prefix", true)) {
+            return;
+        }
+
+        // Same layout trick as addAutosaveInterval, so table-prefix goes before config-version with its comments below it
+        List<String> commentsAboveVersion = config.getComments("config-version");
+        config.set("config-version", null);
+
+        config.set("table-prefix", "sys_");
+        config.setComments("table-prefix", commentsAboveVersion);
+
+        config.set("config-version", "0");
+        config.setComments("config-version", new ArrayList<>(Arrays.asList(
+                "Put in front of each level system's name for its database table, e.g. sys_mining. Use a different prefix for each server when",
+                "several servers share one MySQL database. Changing it starts new, empty tables, it does not rename existing ones.",
                 null // blank line
         )));
     }
