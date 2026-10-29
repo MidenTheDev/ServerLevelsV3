@@ -19,7 +19,9 @@ public final class ConfigUpdater {
     // Must be in version order. Add a new entry here whenever the config format changes
     private static final List<Migration> MIGRATIONS = List.of(
             new Migration("2.1", ConfigUpdater::addAutosaveInterval),
-            new Migration("2.2", ConfigUpdater::addRateLimiter)
+            new Migration("2.2", ConfigUpdater::addRateLimiter),
+            // Only changes config-version itself from a number to text, see update
+            new Migration("2.3", config -> {})
     );
 
     private ConfigUpdater() {}
@@ -40,8 +42,8 @@ public final class ConfigUpdater {
             }
             plugin.getLogger().info("Updating config.yml from version " + currentVersion + " to " + migration.version());
             migration.apply().accept(config);
-            // Written as a number to match the existing config-version format
-            config.set("config-version", Double.parseDouble(migration.version()));
+            // Written as text. As a number, a version like 2.10 would be read back as 2.1
+            config.set("config-version", migration.version());
             currentVersion = migration.version();
             updated = true;
         }
@@ -65,7 +67,7 @@ public final class ConfigUpdater {
         config.set("autosave-interval", "5m");
         config.setComments("autosave-interval", commentsAboveVersion);
 
-        config.set("config-version", 0.0);
+        config.set("config-version", "0");
         config.setComments("config-version", new ArrayList<>(Arrays.asList(
                 "How often player data is saved to the database. Combine d, h, m and s, e.g. 1d5h4m2s, 30m or 45s.",
                 "Player data is also saved when a player logs off and when the server stops.",
@@ -99,7 +101,7 @@ public final class ConfigUpdater {
         config.set("rate-limiter.sources.bending-kill", true);
         config.setComments("rate-limiter", commentsAboveVersion);
 
-        config.set("config-version", 0.0);
+        config.set("config-version", "0");
         config.setComments("config-version", new ArrayList<>(Arrays.asList(
                 "Lowers exp for doing the same thing over and over, like a mob grinder killing the same mob or spamming one ability.",
                 "A repeat is the same source and thing, e.g. killing the same type of mob, using the same ability, or placing the same block.",
