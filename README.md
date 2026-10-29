@@ -24,7 +24,7 @@
 Adds a new system for server owners to add their own leveling and progression systems completely separate from Minecraft's existing leveling system.
 
 ## 💹 Custom Leveling Systems:
-Using this plugin, you can define your own custom leveling systems. This is done in the plugin's levelsystems.yml file, where you can configure the name, how players gain exp, the formula that calculates the amount of exp required for each level, etc etc. There is no limit on the number of systems you can create, and using the plugin's API you can define your own custom methods for gaining exp!
+Using this plugin, you can define your own custom leveling systems. This is done either in-game or in the plugin's data folder (pugins/ServerLevels), where you can configure the name, how players gain exp, the formula that calculates the amount of exp required for each level, etc etc. There is no limit on the number of systems you can create, and using the plugin's API you can define your own custom methods for gaining exp!
 
 The plugin also supports the following plugins to add new ways to gain exp, new milestone rewards, or to otherwise extend the features of the plguin:
 |Plugin|Has Support|
