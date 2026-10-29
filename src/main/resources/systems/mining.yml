@@ -5,6 +5,8 @@ enabled: true
 auto-add-players: false
 max-level: 20
 exp-multiplier: 1.0
+ignore-creative: true
+disabled-worlds: []
 
 levelup-message: '<green>You leveled up! New mining level: %level%</green>'
 # No message above the hotbar when gaining mining exp

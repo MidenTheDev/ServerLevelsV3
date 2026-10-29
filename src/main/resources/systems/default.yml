@@ -10,6 +10,11 @@ max-level: 100
 # (set with /sl setMultiplier) and any active booster
 exp-multiplier: 1.0
 
+# Players in creative or spectator mode don't gain exp in this system
+ignore-creative: true
+# Worlds where nobody gains exp in this system
+disabled-worlds: []
+
 # Messages use MiniMessage format for color and text effects. Set a message to '' to turn it off
 levelup-message: '<green>You leveled up! New level: %level%</green>'
 # Shown above the hotbar each time exp is gained

@@ -95,6 +95,11 @@ public class LeveledPlayer {
             plugin.debug(getPlayerName() + " didn't get " + expToAdd + " exp in " + system + ", their exp gains are paused");
             return false;
         }
+        Player player = getPlayer();
+        if (player != null && !getSystem().canGainExp(player)) {
+            plugin.debug(player.getName() + " didn't get " + expToAdd + " exp in " + system + ", they're in creative/spectator mode or a disabled world");
+            return false;
+        }
         incrementExp(expToAdd);
         return true;
     }

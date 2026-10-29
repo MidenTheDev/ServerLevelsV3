@@ -1,6 +1,7 @@
 package us.to.midensthings.serverLevels.systems;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.NamespacedKey;
@@ -39,6 +40,10 @@ public class LevelSystem {
     // Multiplier on exp gains for this system
     // Multiplies all exp gained in this system, along with the player's own multiplier and boosters
     private double expMultiplier = 1;
+    // Players in creative or spectator mode don't gain exp in this system
+    private boolean ignoreCreative;
+    // Worlds where nobody gains exp in this system, lower case
+    private Set<String> disabledWorlds = new HashSet<>();
 
     // EXP required to go from level 0 to level 1;
     private double baseExpRequirement;
@@ -145,6 +150,9 @@ public class LevelSystem {
 
         maxLevel = levelSystemConf.getInt(systemName+".max-level", 100);
         expMultiplier = levelSystemConf.getDouble(systemName+".exp-multiplier", 1);
+        ignoreCreative = levelSystemConf.getBoolean(systemName+".ignore-creative", false);
+        disabledWorlds = new HashSet<>();
+        levelSystemConf.getStringList(systemName+".disabled-worlds").forEach(world -> disabledWorlds.add(world.toLowerCase(Locale.ROOT)));
 
         expOnChat = levelSystemConf.getDouble(systemName+".exp-gain.on-chat");
         expOnMobKill = levelSystemConf.getDouble(systemName+".exp-gain.on-mobkill");
@@ -279,6 +287,8 @@ public class LevelSystem {
 
         file.set("max-level",maxLevel);
         file.set("exp-multiplier",expMultiplier);
+        file.set("ignore-creative",ignoreCreative);
+        file.set("disabled-worlds", disabledWorlds.isEmpty() ? null : new ArrayList<>(disabledWorlds));
 
         file.set("exp-gain.on-chat",expOnChat);
         file.set("exp-gain.on-mobkill",expOnMobKill);
@@ -549,6 +559,37 @@ public class LevelSystem {
     public void setMaxLevel(int maxLevel) {
         this.maxLevel = maxLevel;
         rebuildExpRequirementTable();
+    }
+
+    /***
+     * @return whether the player can earn exp in this system right now. Not in creative or spectator mode when ignore-creative
+     * is on, and not in one of the disabled-worlds. Only gameplay exp is blocked, admin commands still work
+     */
+    public boolean canGainExp(Player player) {
+        if (ignoreCreative && (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR)) {
+            return false;
+        }
+        return !disabledWorlds.contains(player.getWorld().getName().toLowerCase(Locale.ROOT));
+    }
+
+    public boolean ignoresCreative() {
+        return ignoreCreative;
+    }
+
+    public void setIgnoreCreative(boolean ignoreCreative) {
+        this.ignoreCreative = ignoreCreative;
+    }
+
+    /***
+     * @return the worlds where nobody gains exp in this system, lower case
+     */
+    public Set<String> getDisabledWorlds() {
+        return Collections.unmodifiableSet(disabledWorlds);
+    }
+
+    public void setDisabledWorlds(Collection<String> worlds) {
+        disabledWorlds = new HashSet<>();
+        worlds.forEach(world -> disabledWorlds.add(world.toLowerCase(Locale.ROOT)));
     }
 
     /***

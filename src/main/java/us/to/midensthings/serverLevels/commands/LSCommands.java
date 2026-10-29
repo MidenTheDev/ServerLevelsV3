@@ -72,6 +72,8 @@ public class LSCommands {
 
                             .then(setting("autoAddPlayers", BoolArgumentType.bool(), Boolean.class,
                                     LevelSystem::doAutoAddPlayers, LevelSystem::setAutoAddPlayers))
+                            .then(setting("ignoreCreative", BoolArgumentType.bool(), Boolean.class,
+                                    LevelSystem::ignoresCreative, LevelSystem::setIgnoreCreative))
                             .then(setting("useMilestones", BoolArgumentType.bool(), Boolean.class,
                                     LevelSystem::usingMilestones, LevelSystem::setUsingMilestones))
 
