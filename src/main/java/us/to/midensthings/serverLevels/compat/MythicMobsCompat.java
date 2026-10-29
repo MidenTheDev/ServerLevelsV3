@@ -4,12 +4,12 @@ import io.lumine.mythic.bukkit.MythicBukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 
 import java.io.File;
 
 public class MythicMobsCompat {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
-    private File mmYml = new File(plugin.getDataFolder()+"/Compat/mythicmobs.yml");
     // volatile since /sl reload replaces it from a background thread
     private volatile YamlConfiguration mmConf;
 
@@ -18,7 +18,8 @@ public class MythicMobsCompat {
     }
 
     public void reloadConfig() {
-        mmConf = YamlConfiguration.loadConfiguration(mmYml);
+        // The mythicmobs section of each system file, keyed by system name
+        mmConf = plugin.getCompatConf(SystemConfigs.MYTHICMOBS);
     }
 
     public boolean isMythicMob(Entity entity) {

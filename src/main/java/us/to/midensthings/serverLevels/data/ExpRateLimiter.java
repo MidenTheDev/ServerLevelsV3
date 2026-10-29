@@ -120,7 +120,7 @@ public class ExpRateLimiter {
     private final Map<UUID, Map<String, ArrayDeque<Long>>> recentGains = new HashMap<>();
 
     /***
-     * Reads the default settings from config.yml and each level system's overrides from levelsystems.yml
+     * Reads the default settings from config.yml and each level system's overrides from its file in systems/
      */
     public void load(FileConfiguration config, YamlConfiguration levelSystemsConf) {
         Settings newDefaults = readSettings(config.getConfigurationSection("rate-limiter"), Settings.DISABLED, "config.yml");

@@ -136,7 +136,7 @@ public class DatabaseManager {
      * Runs on the database thread, so any queued saves finish against the old pool first.
      * Settings are read from the given configs before this returns.
      * @param config the plugin's config.yml
-     * @param levelSystemsConf the levelsystems.yml to create tables for
+     * @param levelSystemsConf the level systems to create tables for, keyed by name
      * @return a future that completes on the database thread once the database is ready
      */
     @ApiStatus.Internal

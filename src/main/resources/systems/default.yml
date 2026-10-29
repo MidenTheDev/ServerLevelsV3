@@ -1,0 +1,138 @@
+# Settings for the "default" level system. Every file in this folder is a level system, named after the file.
+# To make a new one, copy this file (or use /ls create) and change the name. Please go to the Wiki for in-depth guidance.
+
+# Turn the whole level system on or off
+enabled: true
+# Add every player to this system when they join. Otherwise, use /sl addSystem
+auto-add-players: true
+max-level: 100
+# Added to each player's own exp multiplier (1 unless set with /sl setMultiplier), so 0.0 gives normal exp
+exp-gain-multiplier: 0.0
+
+# Messages use MiniMessage format for color and text effects
+send-message-on-levelup: true
+levelup-message: '<green>You leveled up! New level: %level%</green>'
+# Shown above the hotbar each time exp is gained
+show-exp-gain: true
+exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
+
+# Broadcasts to everyone when an exp booster for this system starts or ends. Boosters are started with /sl booster
+# Booster messages can use %multiplier%, %system%, and %duration% (start message only)
+broadcast-boosters: true
+booster-start-message: "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>"
+booster-end-message: "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>"
+
+# Exp given for each action. Mobs and blocks below can override these
+exp-gain:
+  on-chat: 0.2
+  on-mobkill: 0.4
+  on-playerkill: 0.6
+  on-blockbreak: 0.01
+  on-blockplace: 0.01
+
+spawner-mobs:
+  # Multiplies exp from killing or bending mobs that came from a mob spawner, e.g. 0.25 for a quarter of the normal exp.
+  # Set exact exp for specific spawner mobs in the mobs section. Trial spawners are not affected
+  exp-multiplier: 1.0
+
+# Overrides the rate-limiter in config.yml for this system only. Any setting left out uses config.yml's value.
+# Use enabled: false to turn it off for this system
+# rate-limiter:
+#   sources:
+#     block-break: true
+
+exp-requirements:
+  # Options: LINEAR, EXPONENTIAL, SQRT
+  # EXPONENTIAL: each level costs the previous level's cost * exp-req-multiplier. In this configuration, the cost increases by
+  #   10% every level: level 1 costs 8 exp (base), level 2 costs 8.8, level 3 costs 9.68, etc. Easier early on, much harder later.
+  # LINEAR: each level costs base-exp-req + level * (base-exp-req * exp-req-multiplier).
+  # SQRT: each level costs base-exp-req + base-exp-req * exp-req-multiplier * sqrt(level), so levels keep getting more expensive,
+  #   but by less each time.
+  exp-scalar-type: EXPONENTIAL
+  base-exp-req: 8.0
+  exp-req-multiplier: 1.1
+
+# How much exp each mob gives in this system. Mobs not listed use exp-gain.on-mobkill
+mobs:
+  ENDERMAN: 0.1
+  MANNEQUIN: 0.7
+  # Exp for mobs that came from a mob spawner. Spawner mobs not listed use their normal exp * spawner-mobs.exp-multiplier
+  spawner:
+    ZOMBIE: 0.05
+
+# How much exp each block gives in this system. Blocks not listed use exp-gain.on-blockbreak and exp-gain.on-blockplace
+blocks: {}
+
+# Rewards for reaching a level. Messages use MiniMessage. Permissions require LuckPerms
+use-milestones: true
+milestones:
+  5:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 5!</green>'
+  10:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 10!</green>'
+    # permissions:
+    #   - "example.permission"
+  15:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 15!</green>'
+  20:
+    commands:
+      - 'give %player% diamond 1'
+    messages:
+      - '<green>You''ve earned a diamond for reaching level 20!</green>'
+
+# Only used when ProjectKorra is installed
+projectkorra:
+  exp-gain:
+    bending-kill-player: 0.8
+    bending-kill-mob: 0.6
+    bending-damage-player: 0.04
+    bending-damage-mob: 0.02
+    bending-use-ability: 0.1
+  abilities-use:
+    EarthSmash: 1.0
+    Lightning: 2.0
+    AvatarState: 2.0
+  abilities-kill-player:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  abilities-kill-mob:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  abilities-damage-player:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  abilities-damage-mob:
+    EarthSmash: 0.1
+    Lightning: 0.4
+  kill-mobs:
+    ENDERMAN: 0.1
+    MANNEQUIN: 0.7
+  damage-mobs:
+    ENDERMAN: 0.1
+    MANNEQUIN: 0.1
+
+# Only used when MythicMobs is installed
+mythicmobs:
+  on-mobkill: 0.1
+  mobs:
+    SkeletalKnight: 1.2
+
+# Only used when NouveauEnchanting is installed
+nouveauenchanting:
+  exp-gain:
+    on-enchant: 0.4
+  enchantments:
+    sharpness:
+      2: 0.6
+      3: 0.8
+      4: 1.0
+      5: 1.2

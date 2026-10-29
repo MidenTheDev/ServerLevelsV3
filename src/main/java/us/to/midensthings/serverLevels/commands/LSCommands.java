@@ -28,7 +28,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /***
- * Commands for editing existing level systems. Changes apply right away, /ls save writes them to levelsystems.yml.
+ * Commands for editing existing level systems. Changes apply right away, /ls save writes them to the system's file in systems/.
  */
 public class LSCommands {
 
@@ -104,7 +104,7 @@ public class LSCommands {
                                 }
 
                                 levelSystem.saveToConfig();
-                                sender.sendMessage(Component.text("Saved level system " + levelSystem.getSystemName() + " to levelsystems.yml")
+                                sender.sendMessage(Component.text("Saved level system " + levelSystem.getSystemName() + " to systems/" + levelSystem.getSystemName() + ".yml")
                                         .color(TextColor.color(Color.GREEN.asRGB())));
                                 return Command.SINGLE_SUCCESS;
                             })))
@@ -143,7 +143,7 @@ public class LSCommands {
                                                 .color(TextColor.color(Color.YELLOW.asRGB()))
                                                 .clickEvent(ClickEvent.suggestCommand("/ls save " + systemName))
                                                 .hoverEvent(HoverEvent.showText(Component.text("Click to start the command"))))
-                                        .append(Component.text(" to save it to levelsystems.yml. Unsaved systems are removed on reload or restart."))
+                                        .append(Component.text(" to save it to systems/" + systemName + ".yml. Unsaved systems are removed on reload or restart."))
                                         .color(TextColor.color(Color.GRAY.asRGB())));
                                 return Command.SINGLE_SUCCESS;
                             })
@@ -217,7 +217,7 @@ public class LSCommands {
     }
 
     /***
-     * Finds a level system that already uses this name, ignoring case. Checks levelsystems.yml too, so disabled systems count.
+     * Finds a level system that already uses this name, ignoring case. Checks the system files too, so disabled systems count.
      * Case is ignored because H2 table names aren't case sensitive, so "Mining" and "mining" would share a table.
      * @return the existing system's name, or null if the name is free
      */

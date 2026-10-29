@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 import us.to.midensthings.serverLevels.util.EntityUtil;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.data.ExpRateLimiter;
@@ -19,7 +20,6 @@ import java.io.File;
 
 public class ProjectKorraCompatEvents implements Listener {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
-    File pkYml = new File(plugin.getDataFolder()+"/Compat/projectkorra.yml");
     // volatile since /sl reload replaces it from a background thread
     volatile YamlConfiguration pkConf;
 
@@ -28,7 +28,8 @@ public class ProjectKorraCompatEvents implements Listener {
     }
 
     public void reloadConfig() {
-        pkConf = YamlConfiguration.loadConfiguration(pkYml);
+        // The projectkorra section of each system file, keyed by system name
+        pkConf = plugin.getCompatConf(SystemConfigs.PROJECTKORRA);
     }
 
     // Events based on entity damage and death will fire twice due to the built-in mobkill and playerkill events!

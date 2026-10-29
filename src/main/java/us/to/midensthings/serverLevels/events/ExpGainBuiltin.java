@@ -67,7 +67,7 @@ public class ExpGainBuiltin implements Listener {
             double expToAdd;
 
             if (isMythicMob) {
-                // Use the exp for the mob from mythicmobs.yml
+                // Use the exp for the mob from the system's mythicmobs section
                 MythicMobsCompat mmComp = plugin.getMythicMobsCompat();
                 expToAdd = system.getDefaultExpOnMobKill();
                 if (mmComp.getConfig().getConfigurationSection(system.getSystemName()) != null) {
@@ -85,7 +85,7 @@ public class ExpGainBuiltin implements Listener {
                     expToAdd *= system.getSpawnerMobMultiplier();
                 }
             } else {
-                // Vanilla mob, use the exp for the mob from mobs.yml, adjusted if it came from a mob spawner
+                // Vanilla mob, use the exp for the mob from the system's mobs section, adjusted if it came from a mob spawner
                 expToAdd = system.getMobKillExp(event.getEntityType(), fromSpawner);
             }
 

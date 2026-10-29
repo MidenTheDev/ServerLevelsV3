@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import us.to.midensthings.nouveauEnchanting.customevents.PlayerEnchantEvent;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 import us.to.midensthings.serverLevels.data.ExpRateLimiter;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
@@ -21,7 +22,6 @@ import java.util.Map;
 
 public class NouveauEnchantingCompatEvents implements Listener {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
-    File neYml = new File(plugin.getDataFolder()+"/Compat/nouveauenchanting.yml");
 
     // The exp settings for one level system, parsed from nouveauenchanting.yml
     private record SystemEnchantExp(double defaultExp, Map<Enchantment, Map<Integer, Double>> enchantmentExp) {
@@ -41,7 +41,8 @@ public class NouveauEnchantingCompatEvents implements Listener {
     }
 
     public void reloadConfig() {
-        YamlConfiguration neConf = YamlConfiguration.loadConfiguration(neYml);
+        // The nouveauenchanting section of each system file, keyed by system name
+        YamlConfiguration neConf = plugin.getCompatConf(SystemConfigs.NOUVEAUENCHANTING);
         final Registry<Enchantment> enchantmentRegistry = RegistryAccess
                 .registryAccess()
                 .getRegistry(RegistryKey.ENCHANTMENT);

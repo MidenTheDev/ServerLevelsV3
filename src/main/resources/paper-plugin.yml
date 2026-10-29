@@ -53,7 +53,7 @@ permissions:
     description: Allows users to edit the details of existing LevelSystems using /ls
   serverlevels.commands.savesystem:
     default: op
-    description: Allows users to save edited LevelSystems to levelsystems.yml using /ls save
+    description: Allows users to save edited LevelSystems to their file in systems/ using /ls save
   serverlevels.commands.create:
     default: op
     description: Allows users to create new LevelSystems using /ls create

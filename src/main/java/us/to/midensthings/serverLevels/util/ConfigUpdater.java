@@ -110,7 +110,7 @@ public final class ConfigUpdater {
                 "  reduction-per-repeat: each repeat after that gives this much less (0.1 = 10% less each time).",
                 "  minimum-multiplier: exp never drops below this fraction of normal. 0 lets it drop to no exp at all.",
                 "  sources: which kinds of exp are limited. block-break is off by default, since mining the same block is normal play.",
-                "These are the defaults for every level system. A system can override any of them with its own rate-limiter section in levelsystems.yml.",
+                "These are the defaults for every level system. A system can override any of them with its own rate-limiter section in its file in systems/.",
                 null // blank line
         )));
     }

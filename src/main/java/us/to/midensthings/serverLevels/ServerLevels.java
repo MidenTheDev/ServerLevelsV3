@@ -16,6 +16,7 @@ import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEven
 import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
 import us.to.midensthings.serverLevels.data.BoosterManager;
 import us.to.midensthings.serverLevels.data.ExpRateLimiter;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.PlayerLoader;
@@ -31,7 +32,9 @@ import us.to.midensthings.serverLevels.util.UpdateTracker;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,17 +51,14 @@ public final class ServerLevels extends JavaPlugin {
     // volatile since it's replaced on reload and read from other threads
     private volatile LevelSystemRegistry levelSystemRegistry;
 
-    File levelsystemsYml = new File(this.getDataFolder()+"/levelsystems.yml");
+    // Each level system's file in systems/, by system name
+    private volatile Map<String, YamlConfiguration> systemFiles = new HashMap<>();
+    // Combined views of every system file, keyed by system name, see SystemConfigs
     private YamlConfiguration levelSystemsConf;
-
-    File milestonesYml = new File(this.getDataFolder()+"/milestones.yml");
     private YamlConfiguration milestonesConf;
-
-    File mobsYml = new File(this.getDataFolder()+"/mobs.yml");
     private YamlConfiguration mobsConf;
-
-    File blocksYml = new File(this.getDataFolder()+"/blocks.yml");
     private YamlConfiguration blocksConf;
+    private volatile Map<String, YamlConfiguration> compatConfs = new HashMap<>();
 
     private DatabaseManager databaseManager;
     private BoosterManager boosterManager;
@@ -134,44 +134,20 @@ public final class ServerLevels extends JavaPlugin {
     }
 
 
-    // The plugin's config files besides config.yml, loaded together so a reload can read them off the main thread then swap them in at once
-    private record ConfigFiles(YamlConfiguration levelSystems, YamlConfiguration milestones,
-                               YamlConfiguration mobs, YamlConfiguration blocks) {}
-
     public void loadConfigs() {
-        applyConfigFiles(readConfigFiles());
+        applyConfigFiles(SystemConfigs.load(this));
     }
 
-    // Creates any missing config files and reads them all from disk. Safe to call off the main thread
-    private ConfigFiles readConfigFiles() {
-        if (!levelsystemsYml.exists()) {
-            logger.info("Creating levelsystems.yml");
-            this.saveResource("levelsystems.yml", false);
-        }
-        if (!milestonesYml.exists()) {
-            logger.info("Creating milestones.yml");
-            this.saveResource("milestones.yml", false);
-        }
-        if (!mobsYml.exists()) {
-            logger.info("Creating mobs.yml");
-            this.saveResource("mobs.yml", false);
-        }
-        if (!blocksYml.exists()) {
-            logger.info("Creating blocks.yml");
-            this.saveResource("blocks.yml", false);
-        }
-        return new ConfigFiles(
-                YamlConfiguration.loadConfiguration(levelsystemsYml),
-                YamlConfiguration.loadConfiguration(milestonesYml),
-                YamlConfiguration.loadConfiguration(mobsYml),
-                YamlConfiguration.loadConfiguration(blocksYml));
-    }
-
-    private void applyConfigFiles(ConfigFiles files) {
-        levelSystemsConf = files.levelSystems();
-        milestonesConf = files.milestones();
-        mobsConf = files.mobs();
-        blocksConf = files.blocks();
+    private void applyConfigFiles(SystemConfigs.Loaded loaded) {
+        systemFiles = new HashMap<>(loaded.files());
+        levelSystemsConf = loaded.levelSystems();
+        milestonesConf = loaded.section(SystemConfigs.MILESTONES);
+        mobsConf = loaded.section(SystemConfigs.MOBS);
+        blocksConf = loaded.section(SystemConfigs.BLOCKS);
+        compatConfs = Map.of(
+                SystemConfigs.PROJECTKORRA, loaded.section(SystemConfigs.PROJECTKORRA),
+                SystemConfigs.MYTHICMOBS, loaded.section(SystemConfigs.MYTHICMOBS),
+                SystemConfigs.NOUVEAUENCHANTING, loaded.section(SystemConfigs.NOUVEAUENCHANTING));
     }
 
     /***
@@ -194,15 +170,12 @@ public final class ServerLevels extends JavaPlugin {
         Executor mainThread = task -> Bukkit.getScheduler().runTask(this, task);
 
         return CompletableFuture
-                .supplyAsync(() -> {
-                    ConfigFiles files = readConfigFiles();
-                    reloadCompatConfigs();
-                    return files;
-                }, async)
+                .supplyAsync(() -> SystemConfigs.load(this), async)
                 // Creates tables for any new systems before they're registered below
                 .thenCompose(files -> databaseManager.setupDatabaseAsync(config, files.levelSystems()).thenApply(ignored -> files))
                 .thenAcceptAsync(files -> {
                     applyConfigFiles(files);
+                    reloadCompatConfigs();
                     registerLevelSystems();
                     startAutosave();
                     expRateLimiter.load(getConfig(), levelSystemsConf);
@@ -342,10 +315,6 @@ public final class ServerLevels extends JavaPlugin {
         if (pm.getPlugin("NouveauEnchanting") != null) {
             logger.info("Enabling NouveauEnchanting Support");
             enabledCompats.add("NouveauEnchanting");
-            File neYml = new File(this.getDataFolder()+"/Compat/nouveauenchanting.yml");
-            if (!neYml.exists()) {
-                this.saveResource("Compat/nouveauenchanting.yml",false);
-            }
             nouveauEnchantingCompatEvents = new NouveauEnchantingCompatEvents();
             pm.registerEvents(nouveauEnchantingCompatEvents,this);
         }
@@ -354,10 +323,6 @@ public final class ServerLevels extends JavaPlugin {
         if (pm.getPlugin("ProjectKorra") != null) {
             logger.info("Enabling ProjectKorra Support");
             enabledCompats.add("ProjectKorra");
-            File pkYml = new File(this.getDataFolder()+"/Compat/projectkorra.yml");
-            if (!pkYml.exists()) {
-                this.saveResource("Compat/projectkorra.yml",false);
-            }
             projectKorraCompatEvents = new ProjectKorraCompatEvents();
             pm.registerEvents(projectKorraCompatEvents,this);
             // Works out when abilities are used, once per use, and gives the exp for it
@@ -368,10 +333,6 @@ public final class ServerLevels extends JavaPlugin {
         if (pm.getPlugin("MythicMobs") != null) {
             logger.info("Enabling MythicMobs Support");
             enabledCompats.add("MythicMobs");
-            File pkYml = new File(this.getDataFolder()+"/Compat/mythicmobs.yml");
-            if (!pkYml.exists()) {
-                this.saveResource("Compat/mythicmobs.yml",false);
-            }
             mythicMobsCompat = new MythicMobsCompat();
         }
 
@@ -387,6 +348,20 @@ public final class ServerLevels extends JavaPlugin {
             papiExpansion = new PAPIExpansion();
             papiExpansion.register();
         }
+    }
+
+    /***
+     * @return the level system's file in systems/, a new empty one if it doesn't have one yet (e.g. a system made with /ls create)
+     */
+    public YamlConfiguration getSystemFile(String system) {
+        return systemFiles.computeIfAbsent(system, name -> new YamlConfiguration());
+    }
+
+    /***
+     * @return the sections for a compatibility (e.g. "projectkorra") of every system file, keyed by system name
+     */
+    public YamlConfiguration getCompatConf(String compat) {
+        return compatConfs.getOrDefault(compat, new YamlConfiguration());
     }
 
     public YamlConfiguration getLevelSystemsConf() {

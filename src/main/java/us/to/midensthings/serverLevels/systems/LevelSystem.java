@@ -11,6 +11,7 @@ import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.util.MessageFormatter;
 import us.to.midensthings.serverLevels.compat.LuckPermsCompat;
 import us.to.midensthings.serverLevels.data.PlayerCache;
+import us.to.midensthings.serverLevels.data.SystemConfigs;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,20 +67,15 @@ public class LevelSystem {
 
     private PlayerCache playerCache;
 
-    // Per mob/block exp overrides from mobs.yml and blocks.yml, parsed once at load
+    // Per mob/block exp overrides from the mobs and blocks sections, parsed once at load
     private Map<EntityType, Double> mobKillExp;
-    // Exp for mobs from mob spawners, from the spawner section of mobs.yml
+    // Exp for mobs from mob spawners, from the spawner part of the mobs section
     private Map<EntityType, Double> spawnerMobKillExp;
-    // Multiplies exp from mobs that came from a mob spawner, for mobs without their own spawner exp in mobs.yml
+    // Multiplies exp from mobs that came from a mob spawner, for mobs without their own spawner exp in the mobs section
     private double spawnerMobMultiplier = 1;
     private Map<Material, Double> blockBreakExp;
     private Map<Material, Double> blockBreakSilkExp;
     private Map<Material, Double> blockPlaceExp;
-
-    // Orders async writes of levelsystems.yml from saveToConfig, so an older save can't finish after a newer one
-    private static final Object SAVE_LOCK = new Object();
-    private static final AtomicLong SAVE_COUNTER = new AtomicLong();
-    private static long lastWrittenSave = 0;
 
     // getExpRequirement for each level from 0 to max level, rebuilt whenever the requirement settings change
     private volatile double[] expRequirementTable;
@@ -90,8 +86,8 @@ public class LevelSystem {
 
 
     /***
-     * Creates a level system with every setting at its zero value (0, false, no messages, LINEAR scaling), without reading levelsystems.yml.
-     * It isn't registered or saved. Use saveToConfig() to write it to levelsystems.yml.
+     * Creates a level system with every setting at its zero value (0, false, no messages, LINEAR scaling), without reading its file.
+     * It isn't registered or saved. Use saveToConfig() to write it to systems/[name].yml.
      */
     public static LevelSystem createEmpty(String systemName) {
         return new LevelSystem(systemName, true);
@@ -131,7 +127,7 @@ public class LevelSystem {
                     milestones.add(Integer.parseInt(milestone));
                 });
             } else {
-                plugin.getLogger().warning("Level System " + systemName + " has milestones enabled but doesn't have any milestones in milestones.yml!");
+                plugin.getLogger().warning("Level System " + systemName + " has milestones enabled but doesn't have any milestones in its milestones section!");
             }
 
         }
@@ -160,12 +156,12 @@ public class LevelSystem {
         boosterStartMsg = levelSystemConf.getString(systemName+".booster-start-message");
         boosterEndMsg = levelSystemConf.getString(systemName+".booster-end-message");
 
-        mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "mobs.yml");
-        spawnerMobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName+".spawner", EntityType.class, "mobs.yml");
+        mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "systems/" + systemName + ".yml");
+        spawnerMobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName+".spawner", EntityType.class, "systems/" + systemName + ".yml");
         spawnerMobMultiplier = levelSystemConf.getDouble(systemName+".spawner-mobs.exp-multiplier", 1);
-        blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "blocks.yml");
-        blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "blocks.yml");
-        blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "blocks.yml");
+        blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "systems/" + systemName + ".yml");
+        blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "systems/" + systemName + ".yml");
+        blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "systems/" + systemName + ".yml");
     }
 
     // A missing or misspelled scalar type used to stop the whole plugin from loading, so warn and fall back to LINEAR instead
@@ -191,7 +187,7 @@ public class LevelSystem {
         }
         for (String key : section.getKeys(false)) {
             if (section.isConfigurationSection(key)) {
-                // A sub section, like spawner in mobs.yml, not an entry
+                // A sub section, like spawner in the mobs section, not an entry
                 continue;
             }
             try {
@@ -204,64 +200,42 @@ public class LevelSystem {
     }
 
     /***
-     * Writes this system's settings to levelsystems.yml. The file is written in the background, errors are logged.
+     * Writes this system's settings to systems/[name].yml. The file is written in the background, errors are logged.
      */
     public void saveToConfig() {
-         levelSystemConf.set(systemName+".send-message-on-levelup",sendMsgOnLevelup);
+        // Written to the system's own file in systems/, keeping its other sections (mobs, blocks, milestones, ...)
+        YamlConfiguration file = plugin.getSystemFile(systemName);
+        file.set("send-message-on-levelup",sendMsgOnLevelup);
         if (sendMsgOnLevelup) {
-            levelSystemConf.set(systemName+".levelup-message",lvlUpMsg);
+            file.set("levelup-message",lvlUpMsg);
         }
 
-        levelSystemConf.set(systemName+".use-milestones",useMilestones);
-        levelSystemConf.set(systemName+".auto-add-players",autoAddPlayers);
+        file.set("use-milestones",useMilestones);
+        file.set("auto-add-players",autoAddPlayers);
 
-        levelSystemConf.set(systemName+".max-level",maxLevel);
-        levelSystemConf.set(systemName+".exp-gain-multiplier",expGainMultiplier);
+        file.set("max-level",maxLevel);
+        file.set("exp-gain-multiplier",expGainMultiplier);
 
-        levelSystemConf.set(systemName+".exp-gain.on-chat",expOnChat);
-        levelSystemConf.set(systemName+".exp-gain.on-mobkill",expOnMobKill);
-        levelSystemConf.set(systemName+".spawner-mobs.exp-multiplier",spawnerMobMultiplier);
-        levelSystemConf.set(systemName+".exp-gain.on-playerkill",expOnPlayerKill);
-        levelSystemConf.set(systemName+".exp-gain.on-blockbreak",expOnBlockBreak);
-        levelSystemConf.set(systemName+".exp-gain.on-blockplace",expOnBlockPlace);
+        file.set("exp-gain.on-chat",expOnChat);
+        file.set("exp-gain.on-mobkill",expOnMobKill);
+        file.set("spawner-mobs.exp-multiplier",spawnerMobMultiplier);
+        file.set("exp-gain.on-playerkill",expOnPlayerKill);
+        file.set("exp-gain.on-blockbreak",expOnBlockBreak);
+        file.set("exp-gain.on-blockplace",expOnBlockPlace);
 
-        levelSystemConf.set(systemName+".exp-requirements.base-exp-req",baseExpRequirement);
-        levelSystemConf.set(systemName+".exp-requirements.exp-req-multiplier",expRequirementMultiplier);
+        file.set("exp-requirements.base-exp-req",baseExpRequirement);
+        file.set("exp-requirements.exp-req-multiplier",expRequirementMultiplier);
 
-        levelSystemConf.set(systemName+".exp-requirements.exp-scalar-type",scalarType.toString());
+        file.set("exp-requirements.exp-scalar-type",scalarType.toString());
 
-        levelSystemConf.set(systemName+".show-exp-gain",showExpGain);
-        levelSystemConf.set(systemName+".exp-gain-message",expGainMsg);
+        file.set("show-exp-gain",showExpGain);
+        file.set("exp-gain-message",expGainMsg);
 
-        levelSystemConf.set(systemName+".broadcast-boosters",broadcastBoosters);
-        levelSystemConf.set(systemName+".booster-start-message",boosterStartMsg);
-        levelSystemConf.set(systemName+".booster-end-message",boosterEndMsg);
+        file.set("broadcast-boosters",broadcastBoosters);
+        file.set("booster-start-message",boosterStartMsg);
+        file.set("booster-end-message",boosterEndMsg);
 
-        // Build the file contents now, then write them off the main thread
-        String yaml = levelSystemConf.saveToString();
-        File levelsystemsYml = new File(plugin.getDataFolder()+"/levelsystems.yml");
-        long saveId = SAVE_COUNTER.incrementAndGet();
-        Runnable write = () -> {
-            synchronized (SAVE_LOCK) {
-                // A newer save already wrote the file, don't overwrite it with older contents
-                if (saveId < lastWrittenSave) {
-                    return;
-                }
-                try {
-                    Files.writeString(levelsystemsYml.toPath(), yaml);
-                    lastWrittenSave = saveId;
-                } catch (IOException e) {
-                    plugin.getLogger().severe("Could not save levelsystems.yml: " + e.getMessage());
-                }
-            }
-        };
-
-        // Async tasks can't be scheduled while the plugin is shutting down, so write right away then
-        if (plugin.isEnabled()) {
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, write);
-        } else {
-            write.run();
-        }
+        SystemConfigs.save(plugin, systemName, file);
     }
 
     public boolean doAutoAddPlayers() {
@@ -554,11 +528,11 @@ public class LevelSystem {
     }
 
     /***
-     * @return the exp for killing this mob type from mobs.yml, or the system's default mob kill exp
+     * @return the exp for killing this mob type from the mobs section, or the system's default mob kill exp
      */
     /***
      * @return the exp for killing this mob type, adjusted for mobs that came from a mob spawner:
-     * the mob's spawner exp from mobs.yml if it has one, otherwise its normal exp times spawner-mobs.exp-multiplier
+     * the mob's spawner exp from the mobs section if it has one, otherwise its normal exp times spawner-mobs.exp-multiplier
      */
     public double getMobKillExp(EntityType entityType, boolean fromSpawner) {
         if (!fromSpawner) {
@@ -584,14 +558,14 @@ public class LevelSystem {
     }
 
     /***
-     * @return the exp for breaking this block from blocks.yml, or the system's default block break exp
+     * @return the exp for breaking this block from the blocks section, or the system's default block break exp
      */
     public double getBlockBreakExp(Material block, boolean silkTouch) {
         return (silkTouch ? blockBreakSilkExp : blockBreakExp).getOrDefault(block, expOnBlockBreak);
     }
 
     /***
-     * @return the exp for placing this block from blocks.yml, or the system's default block place exp
+     * @return the exp for placing this block from the blocks section, or the system's default block place exp
      */
     public double getBlockPlaceExp(Material block) {
         return blockPlaceExp.getOrDefault(block, expOnBlockPlace);
