@@ -1,5 +1,6 @@
 package us.to.midensthings.serverLevels.util;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
@@ -7,7 +8,9 @@ import us.to.midensthings.serverLevels.data.SystemConfigs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /***
@@ -25,7 +28,8 @@ public final class ConfigUpdater {
             // Only changes config-version itself from a number to text, see update
             new Migration("2.3", config -> {}),
             new Migration("2.4", ConfigUpdater::addDatabaseOptions),
-            new Migration("2.5", ConfigUpdater::addBoosterMessages)
+            new Migration("2.5", ConfigUpdater::addBoosterMessages),
+            new Migration("2.6", ConfigUpdater::moveCommentsAboveKeys)
     );
 
     private ConfigUpdater() {}
@@ -63,7 +67,7 @@ public final class ConfigUpdater {
             return;
         }
 
-        // Comments in config.yml sit below the option they describe, which Bukkit stores as comments above the next key.
+        // Before 2.6, comments in config.yml sat below the option they describe, which Bukkit stores as comments above the next key.
         // Move config-version to the end so autosave-interval goes before it, and keep the comment layout the same
         List<String> commentsAboveVersion = config.getComments("config-version");
         config.set("config-version", null);
@@ -170,5 +174,67 @@ public final class ConfigUpdater {
                 "own booster-start-message and booster-end-message in its file, including '' to turn them off for that system only.",
                 null // blank line
         )));
+    }
+
+    // 2.6: comments moved above the options they describe, and the options put in the same order as a new config.yml
+    private static void moveCommentsAboveKeys(FileConfiguration config) {
+        if (!(config.getDefaults() instanceof FileConfiguration defaults)) {
+            return;
+        }
+
+        // Take every option out, then add them back in the order of the jar's config.yml. Options the jar doesn't have
+        // keep their place relative to each other, after the jar's options and before config-version
+        Map<String, Object> values = new LinkedHashMap<>();
+        Map<String, List<String>> comments = new LinkedHashMap<>();
+        for (String key : config.getKeys(false)) {
+            values.put(key, toPlainValue(config.get(key)));
+            comments.put(key, config.getComments(key));
+            config.set(key, null);
+        }
+
+        List<String> order = new ArrayList<>();
+        for (String key : defaults.getKeys(false)) {
+            if (values.containsKey(key) && !key.equals("config-version")) {
+                order.add(key);
+            }
+        }
+        for (String key : values.keySet()) {
+            if (!order.contains(key) && !key.equals("config-version")) {
+                order.add(key);
+            }
+        }
+        order.add("config-version");
+
+        for (String key : order) {
+            Object value = values.get(key);
+            if (value instanceof Map<?, ?> map) {
+                config.createSection(key, map);
+            } else {
+                config.set(key, value);
+            }
+            if (!defaults.contains(key, true)) {
+                config.setComments(key, comments.get(key));
+            }
+        }
+
+        // Every option the jar has gets the jar's comments, which are now above the option
+        for (String path : defaults.getKeys(true)) {
+            if (config.contains(path, true)) {
+                config.setComments(path, defaults.getComments(path));
+                config.setInlineComments(path, defaults.getInlineComments(path));
+            }
+        }
+    }
+
+    // Copies a section into nested maps, so it can be added back after being removed from the config
+    private static Object toPlainValue(Object value) {
+        if (!(value instanceof ConfigurationSection section)) {
+            return value;
+        }
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (String key : section.getKeys(false)) {
+            map.put(key, toPlainValue(section.get(key)));
+        }
+        return map;
     }
 }

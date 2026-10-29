@@ -1,7 +1,7 @@
 # In the spirit of Organization, comments have been kept to a minimum. Please go to the Wiki for in-depth guidance
 
-data-format: 'h2'
 # Options: h2, sqlite, mysql (more coming eventually)
+data-format: 'h2'
 
 mysql:
   host: "127.0.0.1:3306"
@@ -11,26 +11,37 @@ mysql:
   pool-size: 10 # How many connections to keep open to the MySQL server
   ssl-mode: PREFERRED # DISABLED, PREFERRED, REQUIRED, VERIFY_CA or VERIFY_IDENTITY
 
+# Put in front of each level system's name for its database table, e.g. sys_mining. Use a different prefix for each server when
+# several servers share one MySQL database. Changing it starts new, empty tables, it does not rename existing ones.
+table-prefix: sys_
 
-debug-mode: false
 # Turn this on when you find a bug and try and cause the bug again.
 # Then, report the bug on discord and/or github.
 # You can report bugs without this, but the debug entries make my life easier.
 # Logs every exp gain with its multipliers, each ProjectKorra ability use and how it was detected, and rate limiter reductions.
+debug-mode: false
 
-check-for-updates: true
 # Checks Modrinth on startup and logs a message if a newer release is available.
+check-for-updates: true
 
-autosave-interval: 5m
 # How often player data is saved to the database. Combine d, h, m and s, e.g. 1d5h4m2s, 30m or 45s.
 # Player data is also saved when a player logs off and when the server stops.
+autosave-interval: 5m
 
+# Lowers exp for doing the same thing over and over, like a mob grinder killing the same mob or spamming one ability.
+# A repeat is the same source and thing, e.g. killing the same type of mob, using the same ability, or placing the same block.
+# These are the defaults for every level system. A system can override any of them with its own rate-limiter section in its file in systems/.
 rate-limiter:
   enabled: true
+  # How far back repeats are counted
   window: 1m
+  # How many repeats in the window still give full exp
   free-repeats: 10
+  # Each repeat after that gives this much less (0.1 = 10% less each time)
   reduction-per-repeat: 0.1
+  # Exp never drops below this fraction of normal. 0 lets it drop to no exp at all
   minimum-multiplier: 0.1
+  # Which kinds of exp are limited. block-break is off by default, since mining the same block is normal play
   sources:
     chat: true
     mob-kill: true
@@ -41,22 +52,11 @@ rate-limiter:
     bending-ability: true
     bending-damage: true
     bending-kill: true
-# Lowers exp for doing the same thing over and over, like a mob grinder killing the same mob or spamming one ability.
-# A repeat is the same source and thing, e.g. killing the same type of mob, using the same ability, or placing the same block.
-#   window: how far back repeats are counted. free-repeats: how many repeats in the window still give full exp.
-#   reduction-per-repeat: each repeat after that gives this much less (0.1 = 10% less each time).
-#   minimum-multiplier: exp never drops below this fraction of normal. 0 lets it drop to no exp at all.
-#   sources: which kinds of exp are limited. block-break is off by default, since mining the same block is normal play.
-# These are the defaults for every level system. A system can override any of them with its own rate-limiter section in its file in systems/.
 
-table-prefix: sys_
-# Put in front of each level system's name for its database table, e.g. sys_mining. Use a different prefix for each server when
-# several servers share one MySQL database. Changing it starts new, empty tables, it does not rename existing ones.
-
-booster-start-message: "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>"
-booster-end-message: "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>"
 # Broadcast to everyone when an exp booster starts or ends. Boosters are started with /sl booster. Messages use MiniMessage and can
 # use %multiplier%, %system%, and %duration% (start message only). Set a message to '' to turn it off. A level system can set its
 # own booster-start-message and booster-end-message in its file, including '' to turn them off for that system only.
+booster-start-message: "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>"
+booster-end-message: "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>"
 
-config-version: '2.5'
+config-version: '2.6'
