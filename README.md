@@ -34,7 +34,12 @@ The plugin also supports the following plugins to add new ways to gain exp, new 
 |Mythic Mobs|✅|
 |LuckPerms|✅ (1.1.0)|
 |PlaceholderAPI|✅ (1.1.0)|
-|ItemsAdder|❌ (W.I.P)|
+|ItemsAdder|✅ (1.2.0)|
+|CraftEngine|✅ (1.2.0)|
+|Oraxen|❌|
+|Nexo|❌ (planned)|
+|MMOItems|❌ (planned)|
+|EliteMobs|❌ (planned)|
 
 ## 📁 Setup:
 The bulk of the setup is done the `levelsystems.yml` file generated after your server boots for the first time. By default, the plugin comes with a generalized default level system that demonstrates how custom level systems are structured. See the Wiki Page for more details on setting up your custom system exactly how you want it.
