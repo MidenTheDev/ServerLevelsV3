@@ -296,17 +296,23 @@ public class LevelSystem {
 
         double expLevelReq = baseExpRequirement;
         for (int level = 1; level < size; level++) {
-            if (scalarType == ScalarType.EXPONENTIAL || scalarType == ScalarType.SQRT) {
+            if (scalarType == ScalarType.EXPONENTIAL) {
                 expLevelReq = expLevelReq * expRequirementMultiplier;
-                // SQRT doesn't include the base requirement in its total, see calculateExpRequirement
-                double previous = (scalarType == ScalarType.SQRT && level == 1) ? 0 : table[level - 1];
-                table[level] = previous + expLevelReq;
+                table[level] = table[level - 1] + expLevelReq;
+            } else if (scalarType == ScalarType.SQRT) {
+                table[level] = table[level - 1] + sqrtLevelCost(level);
             } else {
                 // assume linear
                 table[level] = table[level - 1] + (level * (baseExpRequirement * expRequirementMultiplier) + baseExpRequirement);
             }
         }
         expRequirementTable = table;
+    }
+
+    // SQRT: the exp to go from a level to the next is base + base * multiplier * sqrt(level).
+    // Each level costs more than the last, but the increase gets smaller, so it's gentler than LINEAR at high levels
+    private double sqrtLevelCost(int level) {
+        return baseExpRequirement + baseExpRequirement * expRequirementMultiplier * Math.sqrt(level);
     }
 
     private double calculateExpRequirement(int level) {
@@ -326,11 +332,8 @@ public class LevelSystem {
                 expReq += expLevelReq;
             }
         } else if (scalarType == ScalarType.SQRT){
-            // TODO: Actual sqrt formula
-            expLevelReq = baseExpRequirement;
-            for (int calcLevel = 0;calcLevel<level;calcLevel++) {
-                expLevelReq = expLevelReq*expRequirementMultiplier;
-                expReq += expLevelReq;
+            for (int calcLevel = 0;calcLevel<=level;calcLevel++) {
+                expReq += sqrtLevelCost(calcLevel);
             }
         } else {
             // assume linear

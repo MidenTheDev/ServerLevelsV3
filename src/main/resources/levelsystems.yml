@@ -33,6 +33,8 @@ default:
     # in default configuration, exp cost increases by 10% every level. Level 2 costs 8 exp (base), level 3 costs 8.8, 4 costs 9.68, etc.
     # leveling up is easier early on, and gets harder slower, but gets much more difficult in later levels than linear
     exp-scalar-type: 'EXPONENTIAL'
+    # Options: LINEAR, EXPONENTIAL, SQRT. SQRT: each level costs base-exp-req + base-exp-req * exp-req-multiplier * sqrt(level),
+    # so levels keep getting more expensive, but by less each time
 
 
 mining:
