@@ -42,11 +42,11 @@ The plugin also supports the following plugins to add new ways to gain exp, new 
 |EliteMobs|❌ (planned)|
 
 ## 📁 Setup:
-The bulk of the setup is done the `levelsystems.yml` file generated after your server boots for the first time. By default, the plugin comes with a generalized default level system that demonstrates how custom level systems are structured. See the Wiki Page for more details on setting up your custom system exactly how you want it.
+Every level system gets its own configuration file located in plugins/ServerLevels/systems. Creating a new file in this directory creates a new System. By default, the plugin comes with 2 systems, default and mining. These show examples of how you can customize the exp gains, multipliers, messaging, and so on.
 
-If you want to give your players rewards for leveling up, this is done in the `milestones.yml` file, where you can setup custom rewards for specific levels. Again, the plugin ships with a default configuration file that should give sufficient examples on how to set up your own rewards, but there is a dedicated Wiki Page that goes into much greater detail if neeeded.
+If messing with files isn't your thing, you can also manage your level systems in-game using the /ls commands. Doing /ls create will allow you to create a new system, /ls set changes the individual settings, and /ls save saves the edited system. Some complex pieces of each system may require you to make manual edits to the files, though.
 
-In some cases, you may want players to gain experience for killing mobs, but you might want to make some mobs give more or less exp to the player than others. Configuration for this is done in the `mobs.yml` file. See the Wiki Page for more detail on customizing this file to your liking.
+Detailed guidance on setting up custom level systems can be found in the [Wiki](https://github.com/MidenTheDev/ServerLevelsV3/wiki).
 
 ## 💻 Commands:
 |Command|Permission|Description|
