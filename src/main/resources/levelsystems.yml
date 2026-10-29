@@ -22,6 +22,10 @@ default:
     on-playerkill: 0.6
     on-blockbreak: 0.01
     on-blockplace: 0.01
+  spawner-mobs:
+    exp-multiplier: 1.0
+    # Multiplies exp from killing or bending mobs that came from a mob spawner, e.g. 0.25 for a quarter of the normal exp.
+    # Set exact exp for specific spawner mobs in mobs.yml. Trial spawners are not affected
   exp-requirements:
     base-exp-req: 8.0
     exp-req-multiplier: 1.1
@@ -45,6 +49,8 @@ mining:
     on-playerkill: 0.0
     on-blockbreak: 0.1
     on-blockplace: 0.0
+  spawner-mobs:
+    exp-multiplier: 1.0
   exp-requirements:
     base-exp-req: 8.0
     exp-req-multiplier: 0.5

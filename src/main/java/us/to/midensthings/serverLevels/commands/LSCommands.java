@@ -67,6 +67,8 @@ public class LSCommands {
                                     LevelSystem::getExpOnBlockBreak, LevelSystem::setExpOnBlockBreak))
                             .then(setting("expOnBlockPlace", DoubleArgumentType.doubleArg(), Double.class,
                                     LevelSystem::getExpOnBlockPlace, LevelSystem::setExpOnBlockPlace))
+                            .then(setting("spawnerMobMultiplier", DoubleArgumentType.doubleArg(0), Double.class,
+                                    LevelSystem::getSpawnerMobMultiplier, LevelSystem::setSpawnerMobMultiplier))
 
                             .then(setting("autoAddPlayers", BoolArgumentType.bool(), Boolean.class,
                                     LevelSystem::doAutoAddPlayers, LevelSystem::setAutoAddPlayers))

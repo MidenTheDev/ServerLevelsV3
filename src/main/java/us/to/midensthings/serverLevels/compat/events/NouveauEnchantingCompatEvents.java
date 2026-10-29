@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import us.to.midensthings.nouveauEnchanting.customevents.PlayerEnchantEvent;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.ExpRateLimiter;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
 import java.io.File;
@@ -87,6 +88,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
     @EventHandler
     public void onEnchant(PlayerEnchantEvent event) {
         Map<String, SystemEnchantExp> exp = systemExp;
+        double rate = plugin.getExpRateLimiter().recordGain(event.getPlayer(), ExpRateLimiter.Source.ENCHANTING, event.getEnchantment().getKey().asString());
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             SystemEnchantExp settings = exp.get(system.getSystemName());
@@ -102,7 +104,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
                     // Player isn't in this system
                     return;
                 }
-                lp.gainExp(expToAdd);
+                lp.gainExp(expToAdd * rate);
             }
         });
 

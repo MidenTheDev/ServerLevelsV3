@@ -13,6 +13,7 @@ public class PlayerLeave implements Listener {
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
             levelSystem.getPlayerCache().unloadPlayer(event.getPlayer());
         });
+        plugin.getExpRateLimiter().clearPlayer(event.getPlayer().getUniqueId());
     }
 
 }

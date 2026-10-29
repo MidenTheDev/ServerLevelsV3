@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.util.EntityUtil;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
+import us.to.midensthings.serverLevels.data.ExpRateLimiter;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
 import us.to.midensthings.serverLevels.systems.LeveledPlayer;
 
@@ -39,20 +40,26 @@ public class ProjectKorraCompatEvents implements Listener {
         if (!EntityUtil.canGiveExp(event.getEntity())) {
             return;
         }
+        Player attacker = event.getAttacker();
+        String abilityName = event.getAbility().getName();
 
-        if (event.getEntity() instanceof Player) {
-            // player death
+        if (event.getEntity() instanceof Player victim) {
+            // player death. Repeats are counted per victim, so killing the same player over and over gives less exp
+            double rate = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, victim.getUniqueId().toString());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-player", "abilities-kill-player", event.getAbility().getName());
-                giveExp(event.getAttacker(), levelSystem, expFromAbility);
+                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-player", "abilities-kill-player", abilityName);
+                giveExp(attacker, levelSystem, expFromAbility * rate);
             });
 
         } else {
-            // not player death
+            // not player death. Repeats are counted per mob type, like a mob grinder
+            double rate = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, mobKey(event.getEntity()));
+            boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-mob", "abilities-kill-mob", event.getAbility().getName());
+                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-mob", "abilities-kill-mob", abilityName);
                 double expFromMob = getMobExp(levelSystem, "kill-mobs", event.getEntity());
-                giveExp(event.getAttacker(), levelSystem, expFromAbility + expFromMob);
+                double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
+                giveExp(attacker, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * rate);
             });
         }
 
@@ -72,38 +79,51 @@ public class ProjectKorraCompatEvents implements Listener {
             return;
         }
 
+        Player source = event.getSource();
+        String abilityName = event.getAbility().getName();
+        // Repeats are counted per ability, so spamming one ability on a target gives less exp
+        double rate = plugin.getExpRateLimiter().recordGain(source, ExpRateLimiter.Source.BENDING_DAMAGE, abilityName);
 
         if (event.getEntity() instanceof Player) {
             // player damaged
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-player", "abilities-damage-player", event.getAbility().getName());
-                giveExp(event.getSource(), levelSystem, expFromAbility);
+                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-player", "abilities-damage-player", abilityName);
+                giveExp(source, levelSystem, expFromAbility * rate);
             });
 
         } else {
             // mob damaged
+            boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-mob", "abilities-damage-mob", event.getAbility().getName());
+                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-mob", "abilities-damage-mob", abilityName);
                 double expFromMob = getMobExp(levelSystem, "damage-mobs", event.getEntity());
-                giveExp(event.getSource(), levelSystem, expFromAbility + expFromMob);
+                double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
+                giveExp(source, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * rate);
             });
         }
 
     }
 
-    // Ability used
-    @EventHandler
-    public void onAbilityUsed(PlayerCooldownChangeEvent event) {
-
-        if (event.getResult() != PlayerCooldownChangeEvent.Result.ADDED) {
-            return;
-        }
-
+    /***
+     * Gives exp for using an ability. Called once per use by PKAbilityUseTracker, which works out when an ability was used
+     */
+    public void onAbilityUsed(Player player, String abilityName) {
+        double rate = plugin.getExpRateLimiter().recordGain(player, ExpRateLimiter.Source.BENDING_ABILITY, abilityName);
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-            double expFromAbility = getAbilityExp(levelSystem, "bending-use-ability", "abilities-use", event.getAbility());
-            giveExp((Player) event.getPlayer(), levelSystem, expFromAbility);
+            double expFromAbility = getAbilityExp(levelSystem, "bending-use-ability", "abilities-use", abilityName);
+            giveExp(player, levelSystem, expFromAbility * rate);
         });
+    }
 
+    // The rate limiter key for a mob, its MythicMobs name if it has one, otherwise its type
+    private String mobKey(Entity entity) {
+        if (plugin.enabledCompats.contains("MythicMobs")) {
+            MythicMobsCompat mmComp = plugin.getMythicMobsCompat();
+            if (mmComp.isMythicMob(entity)) {
+                return String.valueOf(mmComp.getMobName(entity));
+            }
+        }
+        return entity.getType().name();
     }
 
     // Gets the default exp from exp-gain, or the ability specific exp if the ability is listed in the given section

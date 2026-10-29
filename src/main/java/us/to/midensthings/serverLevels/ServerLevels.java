@@ -11,9 +11,11 @@ import us.to.midensthings.serverLevels.commands.LSCommands;
 import us.to.midensthings.serverLevels.commands.SLCommands;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.compat.PAPIExpansion;
+import us.to.midensthings.serverLevels.compat.PKAbilityUseTracker;
 import us.to.midensthings.serverLevels.compat.events.NouveauEnchantingCompatEvents;
 import us.to.midensthings.serverLevels.compat.events.ProjectKorraCompatEvents;
 import us.to.midensthings.serverLevels.data.BoosterManager;
+import us.to.midensthings.serverLevels.data.ExpRateLimiter;
 import us.to.midensthings.serverLevels.data.DatabaseManager;
 import us.to.midensthings.serverLevels.data.LevelSystemRegistry;
 import us.to.midensthings.serverLevels.data.PlayerLoader;
@@ -59,6 +61,7 @@ public final class ServerLevels extends JavaPlugin {
 
     private DatabaseManager databaseManager;
     private BoosterManager boosterManager;
+    private ExpRateLimiter expRateLimiter;
     private PluginManager pm;
     private UpdateTracker updateTracker;
 
@@ -86,6 +89,8 @@ public final class ServerLevels extends JavaPlugin {
 
         boosterManager = new BoosterManager();
         boosterManager.start();
+        expRateLimiter = new ExpRateLimiter();
+        expRateLimiter.load(getConfig());
 
         // Level systems must exist before the join listener can load players into them
         registerLevelSystems();
@@ -198,6 +203,7 @@ public final class ServerLevels extends JavaPlugin {
                     applyConfigFiles(files);
                     registerLevelSystems();
                     startAutosave();
+                    expRateLimiter.load(getConfig());
                 }, mainThread)
                 .whenComplete((ignored, error) -> reloading.set(false));
     }
@@ -325,6 +331,8 @@ public final class ServerLevels extends JavaPlugin {
             }
             projectKorraCompatEvents = new ProjectKorraCompatEvents();
             pm.registerEvents(projectKorraCompatEvents,this);
+            // Works out when abilities are used, once per use, and gives the exp for it
+            pm.registerEvents(new PKAbilityUseTracker(projectKorraCompatEvents::onAbilityUsed), this);
         }
 
         // Mythic Mobs
@@ -363,6 +371,10 @@ public final class ServerLevels extends JavaPlugin {
     public YamlConfiguration getMobsConf() {return mobsConf;}
 
     public YamlConfiguration getBlocksConf() {return blocksConf;}
+
+    public ExpRateLimiter getExpRateLimiter() {
+        return expRateLimiter;
+    }
 
     public BoosterManager getBoosterManager() {
         return boosterManager;

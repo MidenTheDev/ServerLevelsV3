@@ -22,4 +22,27 @@ autosave-interval: 5m
 # How often player data is saved to the database. Combine d, h, m and s, e.g. 1d5h4m2s, 30m or 45s.
 # Player data is also saved when a player logs off and when the server stops.
 
-config-version: 2.1
+rate-limiter:
+  enabled: true
+  window: 1m
+  free-repeats: 10
+  reduction-per-repeat: 0.1
+  minimum-multiplier: 0.1
+  sources:
+    chat: true
+    mob-kill: true
+    player-kill: true
+    block-break: false
+    block-place: true
+    enchanting: false
+    bending-ability: true
+    bending-damage: true
+    bending-kill: true
+# Lowers exp for doing the same thing over and over, like a mob grinder killing the same mob or spamming one ability.
+# A repeat is the same source and thing, e.g. killing the same type of mob, using the same ability, or placing the same block.
+#   window: how far back repeats are counted. free-repeats: how many repeats in the window still give full exp.
+#   reduction-per-repeat: each repeat after that gives this much less (0.1 = 10% less each time).
+#   minimum-multiplier: exp never drops below this fraction of normal. 0 lets it drop to no exp at all.
+#   sources: which kinds of exp are limited. block-break is off by default, since mining the same block is normal play.
+
+config-version: 2.2

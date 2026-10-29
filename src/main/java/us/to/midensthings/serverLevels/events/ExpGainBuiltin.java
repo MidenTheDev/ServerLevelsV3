@@ -10,6 +10,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import us.to.midensthings.serverLevels.ServerLevels;
+import us.to.midensthings.serverLevels.data.ExpRateLimiter;
 import us.to.midensthings.serverLevels.util.EntityUtil;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.systems.LevelSystem;
@@ -26,8 +27,9 @@ public class ExpGainBuiltin implements Listener {
             if (!p.isOnline()) {
                 return;
             }
+            double rate = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.CHAT, "chat");
             plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-                giveExp(p, system, system.getExpOnChat());
+                giveExp(p, system, system.getExpOnChat() * rate);
             });
         });
     }
@@ -46,15 +48,20 @@ public class ExpGainBuiltin implements Listener {
 
         // Player was killed
         // Normally a separate event, but EntityDeathEvent and PlayerDeathEvent both fire when a player dies, so this is required
-        if (event.getEntity() instanceof Player) {
+        if (event.getEntity() instanceof Player victim) {
+            // Repeats are counted per victim, so killing the same player over and over gives less exp
+            double rate = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.PLAYER_KILL, victim.getUniqueId().toString());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-                giveExp(p, system, system.getExpOnPlayerKill());
+                giveExp(p, system, system.getExpOnPlayerKill() * rate);
             });
             return;
         }
 
         // Other entity was killed
         boolean isMythicMob = plugin.enabledCompats.contains("MythicMobs") && plugin.getMythicMobsCompat().isMythicMob(event.getEntity());
+        boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
+        String mobKey = isMythicMob ? plugin.getMythicMobsCompat().getMobName(event.getEntity()) : event.getEntityType().name();
+        double rate = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.MOB_KILL, String.valueOf(mobKey));
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             double expToAdd;
@@ -74,12 +81,15 @@ public class ExpGainBuiltin implements Listener {
                         }
                     }
                 }
+                if (fromSpawner) {
+                    expToAdd *= system.getSpawnerMobMultiplier();
+                }
             } else {
-                // Vanilla mob, use the exp for the mob from mobs.yml
-                expToAdd = system.getMobKillExp(event.getEntityType());
+                // Vanilla mob, use the exp for the mob from mobs.yml, adjusted if it came from a mob spawner
+                expToAdd = system.getMobKillExp(event.getEntityType(), fromSpawner);
             }
 
-            giveExp(p, system, expToAdd);
+            giveExp(p, system, expToAdd * rate);
         });
     }
 
@@ -91,17 +101,19 @@ public class ExpGainBuiltin implements Listener {
         Player p = event.getPlayer();
         // Check if player was using silk touch or not
         boolean silkTouch = p.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.SILK_TOUCH) != 0;
+        double rate = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_BREAK, event.getBlock().getType().name());
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            giveExp(p, system, system.getBlockBreakExp(event.getBlock().getType(), silkTouch));
+            giveExp(p, system, system.getBlockBreakExp(event.getBlock().getType(), silkTouch) * rate);
         });
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Player p = event.getPlayer();
+        double rate = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_PLACE, event.getBlock().getType().name());
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            giveExp(p, system, system.getBlockPlaceExp(event.getBlock().getType()));
+            giveExp(p, system, system.getBlockPlaceExp(event.getBlock().getType()) * rate);
         });
     }
 

@@ -68,6 +68,10 @@ public class LevelSystem {
 
     // Per mob/block exp overrides from mobs.yml and blocks.yml, parsed once at load
     private Map<EntityType, Double> mobKillExp;
+    // Exp for mobs from mob spawners, from the spawner section of mobs.yml
+    private Map<EntityType, Double> spawnerMobKillExp;
+    // Multiplies exp from mobs that came from a mob spawner, for mobs without their own spawner exp in mobs.yml
+    private double spawnerMobMultiplier = 1;
     private Map<Material, Double> blockBreakExp;
     private Map<Material, Double> blockBreakSilkExp;
     private Map<Material, Double> blockPlaceExp;
@@ -101,6 +105,7 @@ public class LevelSystem {
         scalarType = ScalarType.LINEAR;
 
         mobKillExp = new EnumMap<>(EntityType.class);
+        spawnerMobKillExp = new EnumMap<>(EntityType.class);
         blockBreakExp = new EnumMap<>(Material.class);
         blockBreakSilkExp = new EnumMap<>(Material.class);
         blockPlaceExp = new EnumMap<>(Material.class);
@@ -156,6 +161,8 @@ public class LevelSystem {
         boosterEndMsg = levelSystemConf.getString(systemName+".booster-end-message");
 
         mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "mobs.yml");
+        spawnerMobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName+".spawner", EntityType.class, "mobs.yml");
+        spawnerMobMultiplier = levelSystemConf.getDouble(systemName+".spawner-mobs.exp-multiplier", 1);
         blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "blocks.yml");
         blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "blocks.yml");
         blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "blocks.yml");
@@ -169,6 +176,10 @@ public class LevelSystem {
             return overrides;
         }
         for (String key : section.getKeys(false)) {
+            if (section.isConfigurationSection(key)) {
+                // A sub section, like spawner in mobs.yml, not an entry
+                continue;
+            }
             try {
                 overrides.put(Enum.valueOf(type, key.toUpperCase()), section.getDouble(key));
             } catch (IllegalArgumentException e) {
@@ -195,6 +206,7 @@ public class LevelSystem {
 
         levelSystemConf.set(systemName+".exp-gain.on-chat",expOnChat);
         levelSystemConf.set(systemName+".exp-gain.on-mobkill",expOnMobKill);
+        levelSystemConf.set(systemName+".spawner-mobs.exp-multiplier",spawnerMobMultiplier);
         levelSystemConf.set(systemName+".exp-gain.on-playerkill",expOnPlayerKill);
         levelSystemConf.set(systemName+".exp-gain.on-blockbreak",expOnBlockBreak);
         levelSystemConf.set(systemName+".exp-gain.on-blockplace",expOnBlockPlace);
@@ -527,6 +539,29 @@ public class LevelSystem {
     /***
      * @return the exp for killing this mob type from mobs.yml, or the system's default mob kill exp
      */
+    /***
+     * @return the exp for killing this mob type, adjusted for mobs that came from a mob spawner:
+     * the mob's spawner exp from mobs.yml if it has one, otherwise its normal exp times spawner-mobs.exp-multiplier
+     */
+    public double getMobKillExp(EntityType entityType, boolean fromSpawner) {
+        if (!fromSpawner) {
+            return getMobKillExp(entityType);
+        }
+        Double spawnerExp = spawnerMobKillExp.get(entityType);
+        return spawnerExp != null ? spawnerExp : getMobKillExp(entityType) * spawnerMobMultiplier;
+    }
+
+    /***
+     * @return the multiplier for exp from mobs that came from a mob spawner, from spawner-mobs.exp-multiplier
+     */
+    public double getSpawnerMobMultiplier() {
+        return spawnerMobMultiplier;
+    }
+
+    public void setSpawnerMobMultiplier(double spawnerMobMultiplier) {
+        this.spawnerMobMultiplier = spawnerMobMultiplier;
+    }
+
     public double getMobKillExp(EntityType entityType) {
         return mobKillExp.getOrDefault(entityType, expOnMobKill);
     }
