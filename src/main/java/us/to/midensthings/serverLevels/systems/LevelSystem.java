@@ -150,7 +150,7 @@ public class LevelSystem {
 
         autoAddPlayers = levelSystemConf.getBoolean(systemName+".auto-add-players");
 
-        scalarType = ScalarType.valueOf(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
+        scalarType = parseScalarType(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
         rebuildExpRequirementTable();
 
         showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
@@ -166,6 +166,20 @@ public class LevelSystem {
         blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "blocks.yml");
         blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "blocks.yml");
         blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "blocks.yml");
+    }
+
+    // A missing or misspelled scalar type used to stop the whole plugin from loading, so warn and fall back to LINEAR instead
+    private ScalarType parseScalarType(String value) {
+        if (value != null) {
+            try {
+                return ScalarType.valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                // Warned below
+            }
+        }
+        plugin.getLogger().warning("Level system " + systemName + " has " + (value == null ? "no" : "an invalid") + " exp-scalar-type"
+                + (value == null ? "" : " '" + value + "'") + ", using LINEAR. Options: " + Arrays.toString(ScalarType.values()));
+        return ScalarType.LINEAR;
     }
 
     // Reads a section of enum names to exp values, warning about (and skipping) names that don't exist
