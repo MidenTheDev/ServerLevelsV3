@@ -207,8 +207,8 @@ public class LeveledPlayer {
     }
 
     /***
-     * Gets the player's exp gain multiplier. This number is added to the level system's
-     * multipler and then the resulting number is multiplied with any exp the player is gaining via the incrementExp method.
+     * Gets the player's exp gain multiplier, 1 for normal exp. Exp the player gains with incrementExp is multiplied by it,
+     * the level system's multiplier, and any active booster.
      * @return the multiplier
      */
     public double getExpMultiplier() {
@@ -216,8 +216,8 @@ public class LeveledPlayer {
     }
 
     /***
-     * Sets the player's exp gain multiplier. This number is added to the level system's
-     * multipler and then the resulting number is multiplied with any exp the player is gaining via the incrementExp method.
+     * Sets the player's exp gain multiplier, 1 for normal exp. Exp the player gains with incrementExp is multiplied by it,
+     * the level system's multiplier, and any active booster.
      * @return the multiplier
      */
     public void setExpMultiplier(double expMultiplier) {
@@ -249,10 +249,10 @@ public class LeveledPlayer {
         LevelSystem ls = getSystem();
         // An active booster multiplies the total, so a 2x booster doubles whatever the player would normally get
         double boosterMultiplier = plugin.getBoosterManager().getMultiplier(system);
-        double expGained = (expToAdd)*(ls.getExpGainMultiplier()+this.expMultiplier)*boosterMultiplier;
+        double expGained = expToAdd * ls.getExpMultiplier() * this.expMultiplier * boosterMultiplier;
         if (plugin.isDebugMode()) {
             plugin.debug(getPlayerName() + " gained " + expGained + " exp in " + system + " (base " + expToAdd + ", system multiplier "
-                    + ls.getExpGainMultiplier() + " + player multiplier " + expMultiplier + ", booster x" + boosterMultiplier + ")");
+                    + ls.getExpMultiplier() + " x player multiplier " + expMultiplier + " x booster " + boosterMultiplier + ")");
         }
         this.exp += expGained;
         dirty = true;

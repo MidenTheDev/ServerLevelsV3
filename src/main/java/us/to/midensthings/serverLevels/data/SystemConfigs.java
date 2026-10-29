@@ -192,10 +192,27 @@ public final class SystemConfigs {
         changed |= upgradeProjectKorra(plugin, system, file);
         changed |= upgradeBlocks(plugin, system, file);
         changed |= upgradeMessageToggles(plugin, system, file);
+        changed |= upgradeExpMultiplier(plugin, system, file);
         if (upgradeBoosterMessages) {
             changed |= upgradeBoosterMessages(plugin, system, file);
         }
         return changed;
+    }
+
+    // exp-gain-multiplier was added to the player's own multiplier, so 0 meant normal exp. exp-multiplier multiplies instead,
+    // so 1 is normal exp. Adding 1 gives the same exp for players with the default multiplier of 1
+    private static boolean upgradeExpMultiplier(ServerLevels plugin, String system, YamlConfiguration file) {
+        if (!file.contains("exp-gain-multiplier")) {
+            return false;
+        }
+        if (!file.contains("exp-multiplier")) {
+            file.set("exp-multiplier", file.getDouble("exp-gain-multiplier") + 1);
+            file.setComments("exp-multiplier", List.of("Multiplies all exp gained in this system, 1 for normal exp"));
+        }
+        file.set("exp-gain-multiplier", null);
+        plugin.getLogger().info("Replaced exp-gain-multiplier with exp-multiplier in " + SYSTEMS_FOLDER + "/" + system
+                + ".yml (" + file.getDouble("exp-multiplier") + ", 1 is normal exp)");
+        return true;
     }
 
     // Set by the config.yml 2.5 update, see upgradeBoosterMessages

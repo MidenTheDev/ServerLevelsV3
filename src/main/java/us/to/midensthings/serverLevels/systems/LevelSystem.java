@@ -37,7 +37,8 @@ public class LevelSystem {
     // Max level of this system
     private int maxLevel;
     // Multiplier on exp gains for this system
-    private double expGainMultiplier;
+    // Multiplies all exp gained in this system, along with the player's own multiplier and boosters
+    private double expMultiplier = 1;
 
     // EXP required to go from level 0 to level 1;
     private double baseExpRequirement;
@@ -143,7 +144,7 @@ public class LevelSystem {
         }
 
         maxLevel = levelSystemConf.getInt(systemName+".max-level", 100);
-        expGainMultiplier = levelSystemConf.getDouble(systemName+".exp-gain-multiplier");
+        expMultiplier = levelSystemConf.getDouble(systemName+".exp-multiplier", 1);
 
         expOnChat = levelSystemConf.getDouble(systemName+".exp-gain.on-chat");
         expOnMobKill = levelSystemConf.getDouble(systemName+".exp-gain.on-mobkill");
@@ -277,7 +278,7 @@ public class LevelSystem {
         file.set("auto-add-players",autoAddPlayers);
 
         file.set("max-level",maxLevel);
-        file.set("exp-gain-multiplier",expGainMultiplier);
+        file.set("exp-multiplier",expMultiplier);
 
         file.set("exp-gain.on-chat",expOnChat);
         file.set("exp-gain.on-mobkill",expOnMobKill);
@@ -550,21 +551,45 @@ public class LevelSystem {
         rebuildExpRequirementTable();
     }
 
+    /***
+     * @return the multiplier for all exp gained in this system, 1 for normal exp
+     */
+    public double getExpMultiplier() {
+        return expMultiplier;
+    }
+
+    public void setExpMultiplier(double expMultiplier) {
+        this.expMultiplier = expMultiplier;
+    }
+
+    /***
+     * @deprecated the system multiplier used to be added to the player's multiplier, so 0 meant normal exp. Use getExpMultiplier,
+     * which multiplies instead. This returns getExpMultiplier() - 1, the old equivalent
+     */
+    @Deprecated
     public double getExpGainMultiplier() {
-        return expGainMultiplier;
+        return expMultiplier - 1;
     }
 
     public String getSystemName() {
         return systemName;
     }
 
+    /***
+     * @deprecated see getExpGainMultiplier. Use setExpMultiplier, this sets it to expGainMultiplier + 1
+     */
+    @Deprecated
     public void setExpGainMultiplier(float expGainMultiplier) {
         // Through the float's decimal form, so 0.1f becomes 0.1 instead of 0.10000000149011612
         setExpGainMultiplier(Double.parseDouble(Float.toString(expGainMultiplier)));
     }
 
+    /***
+     * @deprecated see getExpGainMultiplier. Use setExpMultiplier, this sets it to expGainMultiplier + 1
+     */
+    @Deprecated
     public void setExpGainMultiplier(double expGainMultiplier) {
-        this.expGainMultiplier = expGainMultiplier;
+        this.expMultiplier = expGainMultiplier + 1;
     }
 
     public double getBaseExpRequirement() {

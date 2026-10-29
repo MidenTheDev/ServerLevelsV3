@@ -48,8 +48,8 @@ public class LSCommands {
 
                             .then(setting("maxLevel", IntegerArgumentType.integer(0), Integer.class,
                                     LevelSystem::getMaxLevel, LevelSystem::setMaxLevel))
-                            .then(setting("expGainMultiplier", DoubleArgumentType.doubleArg(), Double.class,
-                                    LevelSystem::getExpGainMultiplier, LevelSystem::setExpGainMultiplier))
+                            .then(setting("expMultiplier", DoubleArgumentType.doubleArg(0), Double.class,
+                                    LevelSystem::getExpMultiplier, LevelSystem::setExpMultiplier))
 
                             .then(setting("baseExpRequirement", DoubleArgumentType.doubleArg(0), Double.class,
                                     LevelSystem::getBaseExpRequirement, LevelSystem::setBaseExpRequirement))

@@ -6,8 +6,9 @@ enabled: true
 # Add every player to this system when they join. Otherwise, use /sl addSystem
 auto-add-players: true
 max-level: 100
-# Added to each player's own exp multiplier (1 unless set with /sl setMultiplier), so 0.0 gives normal exp
-exp-gain-multiplier: 0.0
+# Multiplies all exp gained in this system, 1 for normal exp. It's multiplied with each player's own multiplier
+# (set with /sl setMultiplier) and any active booster
+exp-multiplier: 1.0
 
 # Messages use MiniMessage format for color and text effects. Set a message to '' to turn it off
 levelup-message: '<green>You leveled up! New level: %level%</green>'
