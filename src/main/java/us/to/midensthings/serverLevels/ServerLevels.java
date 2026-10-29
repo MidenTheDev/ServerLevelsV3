@@ -2,6 +2,7 @@ package us.to.midensthings.serverLevels;
 
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.Bukkit;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -9,6 +10,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import us.to.midensthings.serverLevels.commands.LSCommands;
 import us.to.midensthings.serverLevels.commands.SLCommands;
+import us.to.midensthings.serverLevels.compat.CraftEngineCompat;
+import us.to.midensthings.serverLevels.compat.ItemsAdderCompat;
 import us.to.midensthings.serverLevels.compat.MythicMobsCompat;
 import us.to.midensthings.serverLevels.compat.PAPIExpansion;
 import us.to.midensthings.serverLevels.compat.PKAbilityUseTracker;
@@ -342,6 +345,16 @@ public final class ServerLevels extends JavaPlugin {
             enabledCompats.add("LuckPerms");
         }
 
+        // Custom blocks in the blocks section of system files
+        if (pm.getPlugin("ItemsAdder") != null) {
+            logger.info("Enabling ItemsAdder support");
+            enabledCompats.add("ItemsAdder");
+        }
+        if (pm.getPlugin("CraftEngine") != null) {
+            logger.info("Enabling CraftEngine support");
+            enabledCompats.add("CraftEngine");
+        }
+
         if (pm.getPlugin("PlaceholderAPI") != null) {
             logger.info("Enabling PlaceholderAPI Support");
             enabledCompats.add("PlaceholderAPI");
@@ -362,6 +375,29 @@ public final class ServerLevels extends JavaPlugin {
      */
     public YamlConfiguration getCompatConf(String compat) {
         return compatConfs.getOrDefault(compat, new YamlConfiguration());
+    }
+
+    /***
+     * @return the block's ItemsAdder or CraftEngine id, like "itemsadder:namespace:id", or null if it's a vanilla block
+     */
+    public String getCustomBlockId(Block block) {
+        if (enabledCompats.contains("ItemsAdder")) {
+            String id = ItemsAdderCompat.getCustomBlockId(block);
+            if (id != null) {
+                return id;
+            }
+        }
+        if (enabledCompats.contains("CraftEngine")) {
+            return CraftEngineCompat.getCustomBlockId(block);
+        }
+        return null;
+    }
+
+    /***
+     * @return whether a plugin that adds custom blocks (ItemsAdder or CraftEngine) is installed
+     */
+    public boolean hasCustomBlocks() {
+        return enabledCompats.contains("ItemsAdder") || enabledCompats.contains("CraftEngine");
     }
 
     public YamlConfiguration getLevelSystemsConf() {

@@ -186,7 +186,44 @@ public final class SystemConfigs {
     private static boolean upgrade(ServerLevels plugin, String system, YamlConfiguration file) {
         boolean changed = false;
         changed |= upgradeProjectKorra(plugin, system, file);
+        changed |= upgradeBlocks(plugin, system, file);
         return changed;
+    }
+
+    // Block breaking used to have two full lists, break.no-silk and break.silk. It's now one break list, plus break-silk-touch
+    // for only what's different with silk touch
+    private static boolean upgradeBlocks(ServerLevels plugin, String system, YamlConfiguration file) {
+        ConfigurationSection oldBreak = file.getConfigurationSection(BLOCKS + ".break");
+        if (oldBreak == null || (!oldBreak.isConfigurationSection("no-silk") && !oldBreak.isConfigurationSection("silk"))) {
+            return false;
+        }
+        ConfigurationSection noSilk = oldBreak.getConfigurationSection("no-silk");
+        ConfigurationSection silk = oldBreak.getConfigurationSection("silk");
+
+        Map<String, Object> breakExp = new LinkedHashMap<>();
+        Map<String, Object> silkExp = new LinkedHashMap<>();
+        if (noSilk != null) {
+            noSilk.getKeys(false).forEach(block -> breakExp.put(block, noSilk.get(block)));
+        }
+        if (silk != null) {
+            silk.getKeys(false).forEach(block -> silkExp.put(block, silk.get(block)));
+        }
+        // Before, a block only in no-silk gave the default exp when mined with silk touch. Now it would give its break exp,
+        // so keep the old behavior by listing it with the default
+        double defaultBreakExp = file.getDouble("exp-gain.on-blockbreak", 0);
+        breakExp.keySet().stream()
+                .filter(block -> silkExp.keySet().stream().noneMatch(block::equalsIgnoreCase))
+                .forEach(block -> silkExp.put(block, defaultBreakExp));
+
+        file.set(BLOCKS + ".break", null);
+        file.createSection(BLOCKS + ".break", breakExp);
+        file.setComments(BLOCKS + ".break", List.of("Exp for breaking blocks"));
+        if (!silkExp.isEmpty()) {
+            file.createSection(BLOCKS + ".break-silk-touch", silkExp);
+            file.setComments(BLOCKS + ".break-silk-touch", List.of("Exp for breaking blocks with silk touch, for blocks where it's different from break"));
+        }
+        plugin.getLogger().info("Updated the blocks section of " + SYSTEMS_FOLDER + "/" + system + ".yml to the new layout");
+        return true;
     }
 
     // The projectkorra section used to have one list per kind of exp (abilities-use, abilities-kill-mob, ...).

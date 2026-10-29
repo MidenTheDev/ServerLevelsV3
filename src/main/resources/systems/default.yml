@@ -52,7 +52,9 @@ exp-requirements:
   base-exp-req: 8.0
   exp-req-multiplier: 1.1
 
-# How much exp each mob gives in this system. Mobs not listed use exp-gain.on-mobkill
+# How much exp each mob gives in this system. Mobs not listed use exp-gain.on-mobkill.
+# Besides mob names, you can use entity tags like '#minecraft:skeletons' and wildcards like '*_SPIDER'.
+# When several match, the most specific wins: a mob's own name, then a tag, then a wildcard
 mobs:
   ENDERMAN: 0.1
   MANNEQUIN: 0.7
@@ -60,8 +62,18 @@ mobs:
   spawner:
     ZOMBIE: 0.05
 
-# How much exp each block gives in this system. Blocks not listed use exp-gain.on-blockbreak and exp-gain.on-blockplace
-blocks: {}
+# How much exp each block gives in this system. Blocks not listed use exp-gain.on-blockbreak and exp-gain.on-blockplace.
+# Besides block names, you can use block tags like '#minecraft:logs', wildcards like '*_ORE', and blocks from
+# ItemsAdder ('itemsadder:namespace:id') or CraftEngine ('craftengine:namespace:id'). When several match, the most
+# specific wins: a block's own name, then a tag, then a wildcard. Custom blocks never use the vanilla block they're made from
+blocks:
+  break: {}
+  #   '*_ORE': 0.5
+  #   '#minecraft:logs': 0.05
+  #   'itemsadder:myitems:ruby_ore': 3.0
+  # Only blocks where silk touch is different from break
+  break-silk-touch: {}
+  place: {}
 
 # Rewards for reaching a level. Messages use MiniMessage. Permissions require LuckPerms
 use-milestones: true

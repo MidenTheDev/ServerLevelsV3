@@ -32,19 +32,18 @@ exp-requirements:
   base-exp-req: 8.0
   exp-req-multiplier: 0.5
 
+# See default.yml for everything the blocks section can use: tags, wildcards, and ItemsAdder or CraftEngine blocks
 blocks:
   break:
-    # Without silk touch
-    no-silk:
-      DIAMOND_ORE: 1.1
-      DEEPSLATE_DIAMOND_ORE: 1.2
-      DEEPSLATE_EMERALD_ORE: 15.0
-    # With silk touch
-    silk:
-      GRASS_BLOCK: 0.01
-      DIAMOND_ORE: 0.0
-      DEEPSLATE_DIAMOND_ORE: 0.0
-      DEEPSLATE_EMERALD_ORE: 0.0
+    DIAMOND_ORE: 1.1
+    DEEPSLATE_DIAMOND_ORE: 1.2
+    DEEPSLATE_EMERALD_ORE: 15.0
+  # Only blocks where silk touch is different from break
+  break-silk-touch:
+    GRASS_BLOCK: 0.01
+    DIAMOND_ORE: 0.0
+    DEEPSLATE_DIAMOND_ORE: 0.0
+    DEEPSLATE_EMERALD_ORE: 0.0
   place:
     RAIL: 0.03
     POWERED_RAIL: 0.08

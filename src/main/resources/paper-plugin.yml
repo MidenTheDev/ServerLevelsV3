@@ -20,6 +20,14 @@ dependencies:
       load: BEFORE
       required: false
       join-classpath: true
+    ItemsAdder:
+      load: BEFORE
+      required: false
+      join-classpath: true
+    CraftEngine:
+      load: BEFORE
+      required: false
+      join-classpath: true
 permissions:
   serverlevels.commands.addsystem:
     default: op

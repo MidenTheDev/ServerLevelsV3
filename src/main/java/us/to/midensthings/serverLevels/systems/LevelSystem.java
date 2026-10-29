@@ -2,6 +2,9 @@ package us.to.midensthings.serverLevels.systems;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Tag;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Keyed;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
@@ -18,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 public class LevelSystem {
     private final ServerLevels plugin = ServerLevels.getPlugin(ServerLevels.class);
@@ -76,6 +80,10 @@ public class LevelSystem {
     private Map<Material, Double> blockBreakExp;
     private Map<Material, Double> blockBreakSilkExp;
     private Map<Material, Double> blockPlaceExp;
+    // Exp for ItemsAdder and CraftEngine blocks, by id like "itemsadder:namespace:id"
+    private Map<String, Double> customBlockBreakExp;
+    private Map<String, Double> customBlockBreakSilkExp;
+    private Map<String, Double> customBlockPlaceExp;
 
     // getExpRequirement for each level from 0 to max level, rebuilt whenever the requirement settings change
     private volatile double[] expRequirementTable;
@@ -105,6 +113,9 @@ public class LevelSystem {
         blockBreakExp = new EnumMap<>(Material.class);
         blockBreakSilkExp = new EnumMap<>(Material.class);
         blockPlaceExp = new EnumMap<>(Material.class);
+        customBlockBreakExp = new HashMap<>();
+        customBlockBreakSilkExp = new HashMap<>();
+        customBlockPlaceExp = new HashMap<>();
         rebuildExpRequirementTable();
     }
 
@@ -156,12 +167,16 @@ public class LevelSystem {
         boosterStartMsg = levelSystemConf.getString(systemName+".booster-start-message");
         boosterEndMsg = levelSystemConf.getString(systemName+".booster-end-message");
 
-        mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, "systems/" + systemName + ".yml");
-        spawnerMobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName+".spawner", EntityType.class, "systems/" + systemName + ".yml");
+        String fileName = "systems/" + systemName + ".yml";
+        mobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName, EntityType.class, Tag.REGISTRY_ENTITY_TYPES, fileName);
+        spawnerMobKillExp = loadExpOverrides(plugin.getMobsConf(), systemName+".spawner", EntityType.class, Tag.REGISTRY_ENTITY_TYPES, fileName);
         spawnerMobMultiplier = levelSystemConf.getDouble(systemName+".spawner-mobs.exp-multiplier", 1);
-        blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.no-silk", Material.class, "systems/" + systemName + ".yml");
-        blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break.silk", Material.class, "systems/" + systemName + ".yml");
-        blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, "systems/" + systemName + ".yml");
+        blockBreakExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break", Material.class, Tag.REGISTRY_BLOCKS, fileName);
+        blockBreakSilkExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".break-silk-touch", Material.class, Tag.REGISTRY_BLOCKS, fileName);
+        blockPlaceExp = loadExpOverrides(plugin.getBlocksConf(), systemName+".place", Material.class, Tag.REGISTRY_BLOCKS, fileName);
+        customBlockBreakExp = loadCustomBlockExp(plugin.getBlocksConf(), systemName+".break");
+        customBlockBreakSilkExp = loadCustomBlockExp(plugin.getBlocksConf(), systemName+".break-silk-touch");
+        customBlockPlaceExp = loadCustomBlockExp(plugin.getBlocksConf(), systemName+".place");
     }
 
     // A missing or misspelled scalar type used to stop the whole plugin from loading, so warn and fall back to LINEAR instead
@@ -178,25 +193,79 @@ public class LevelSystem {
         return ScalarType.LINEAR;
     }
 
-    // Reads a section of enum names to exp values, warning about (and skipping) names that don't exist
-    private <E extends Enum<E>> Map<E, Double> loadExpOverrides(YamlConfiguration conf, String path, Class<E> type, String fileName) {
+    /***
+     * Reads a section of names to exp values. Keys can be:
+     * an exact name (DIAMOND_ORE), a tag ('#minecraft:logs'), or a wildcard ('*_ORE').
+     * When several match, the most specific wins: exact names, then tags, then wildcards.
+     * Unknown names are warned about and skipped. Custom block ids (itemsadder:..., craftengine:...) are read by loadCustomBlockExp.
+     */
+    private <E extends Enum<E> & Keyed> Map<E, Double> loadExpOverrides(YamlConfiguration conf, String path, Class<E> type,
+                                                                      String tagRegistry, String fileName) {
         Map<E, Double> overrides = new EnumMap<>(type);
         ConfigurationSection section = conf.getConfigurationSection(path);
         if (section == null) {
             return overrides;
         }
+        Map<String, Double> wildcards = new LinkedHashMap<>();
+        Map<String, Double> tags = new LinkedHashMap<>();
+        Map<String, Double> exact = new LinkedHashMap<>();
         for (String key : section.getKeys(false)) {
-            if (section.isConfigurationSection(key)) {
-                // A sub section, like spawner in the mobs section, not an entry
+            if (section.isConfigurationSection(key) || isCustomBlockId(key)) {
+                // A sub section like spawner in the mobs section, or a custom block
                 continue;
             }
+            (key.startsWith("#") ? tags : key.contains("*") ? wildcards : exact).put(key, section.getDouble(key));
+        }
+
+        wildcards.forEach((key, exp) -> {
+            Pattern pattern = Pattern.compile(Pattern.quote(key.toUpperCase(Locale.ROOT)).replace("*", "\\E.*\\Q"));
+            int matched = 0;
+            for (E value : type.getEnumConstants()) {
+                if (pattern.matcher(value.name()).matches()) {
+                    overrides.put(value, exp);
+                    matched++;
+                }
+            }
+            if (matched == 0) {
+                plugin.getLogger().warning("'" + key + "' in " + fileName + " at " + path + " doesn't match any " + type.getSimpleName());
+            }
+        });
+        tags.forEach((key, exp) -> {
+            NamespacedKey tagKey = NamespacedKey.fromString(key.substring(1).toLowerCase(Locale.ROOT));
+            Tag<E> tag = tagKey == null ? null : Bukkit.getTag(tagRegistry, tagKey, type);
+            if (tag == null) {
+                plugin.getLogger().warning("Unknown tag '" + key + "' in " + fileName + " at " + path + ", skipping it");
+                return;
+            }
+            tag.getValues().forEach(value -> overrides.put(value, exp));
+        });
+        exact.forEach((key, exp) -> {
             try {
-                overrides.put(Enum.valueOf(type, key.toUpperCase()), section.getDouble(key));
+                overrides.put(Enum.valueOf(type, key.toUpperCase(Locale.ROOT)), exp);
             } catch (IllegalArgumentException e) {
                 plugin.getLogger().warning("Unknown " + type.getSimpleName() + " '" + key + "' in " + fileName + " at " + path + ", skipping it");
             }
-        }
+        });
         return overrides;
+    }
+
+    private static boolean isCustomBlockId(String key) {
+        String lower = key.toLowerCase(Locale.ROOT);
+        return lower.startsWith("itemsadder:") || lower.startsWith("craftengine:");
+    }
+
+    // Reads the ItemsAdder and CraftEngine block entries of a section, keyed by their lower case id
+    private Map<String, Double> loadCustomBlockExp(YamlConfiguration conf, String path) {
+        Map<String, Double> custom = new HashMap<>();
+        ConfigurationSection section = conf.getConfigurationSection(path);
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                if (isCustomBlockId(key)) {
+                    custom.put(key.toLowerCase(Locale.ROOT), section.getDouble(key));
+                }
+            }
+        }
+        return custom;
     }
 
     /***
@@ -561,7 +630,11 @@ public class LevelSystem {
      * @return the exp for breaking this block from the blocks section, or the system's default block break exp
      */
     public double getBlockBreakExp(Material block, boolean silkTouch) {
-        return (silkTouch ? blockBreakSilkExp : blockBreakExp).getOrDefault(block, expOnBlockBreak);
+        // break-silk-touch only lists what's different with silk touch, everything else uses break
+        if (silkTouch && blockBreakSilkExp.containsKey(block)) {
+            return blockBreakSilkExp.get(block);
+        }
+        return blockBreakExp.getOrDefault(block, expOnBlockBreak);
     }
 
     /***
@@ -569,6 +642,27 @@ public class LevelSystem {
      */
     public double getBlockPlaceExp(Material block) {
         return blockPlaceExp.getOrDefault(block, expOnBlockPlace);
+    }
+
+    /***
+     * @param customBlockId an ItemsAdder or CraftEngine block id, like "itemsadder:namespace:id"
+     * @return the exp for breaking this custom block, or the system's default block break exp. Never the exp of the vanilla
+     * block it's made from
+     */
+    public double getCustomBlockBreakExp(String customBlockId, boolean silkTouch) {
+        String id = customBlockId.toLowerCase(Locale.ROOT);
+        if (silkTouch && customBlockBreakSilkExp.containsKey(id)) {
+            return customBlockBreakSilkExp.get(id);
+        }
+        return customBlockBreakExp.getOrDefault(id, expOnBlockBreak);
+    }
+
+    /***
+     * @param customBlockId an ItemsAdder or CraftEngine block id, like "craftengine:namespace:id"
+     * @return the exp for placing this custom block, or the system's default block place exp
+     */
+    public double getCustomBlockPlaceExp(String customBlockId) {
+        return customBlockPlaceExp.getOrDefault(customBlockId.toLowerCase(Locale.ROOT), expOnBlockPlace);
     }
 
     public void setExpOnBlockPlace(double expOnBlockPlace) {

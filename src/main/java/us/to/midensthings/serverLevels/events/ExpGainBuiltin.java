@@ -2,6 +2,8 @@ package us.to.midensthings.serverLevels.events;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.block.Block;
+import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -101,19 +103,40 @@ public class ExpGainBuiltin implements Listener {
         Player p = event.getPlayer();
         // Check if player was using silk touch or not
         boolean silkTouch = p.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.SILK_TOUCH) != 0;
-        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_BREAK, event.getBlock().getType().name());
+        // ItemsAdder and CraftEngine blocks are made from vanilla blocks, but use their own exp, never the vanilla block's
+        String customBlockId = plugin.getCustomBlockId(event.getBlock());
+        Material type = event.getBlock().getType();
+        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_BREAK,
+                customBlockId != null ? customBlockId : type.name());
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            giveExp(p, system, system.getBlockBreakExp(event.getBlock().getType(), silkTouch) * gain.multiplierFor(system));
+            double exp = customBlockId != null ? system.getCustomBlockBreakExp(customBlockId, silkTouch) : system.getBlockBreakExp(type, silkTouch);
+            giveExp(p, system, exp * gain.multiplierFor(system));
         });
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Player p = event.getPlayer();
-        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_PLACE, event.getBlock().getType().name());
+        Block block = event.getBlock();
+        if (plugin.hasCustomBlocks()) {
+            // ItemsAdder and CraftEngine may turn the block into their custom block after this event, so check a tick later
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (p.isOnline()) {
+                    giveBlockPlaceExp(p, block.getType(), plugin.getCustomBlockId(block));
+                }
+            });
+            return;
+        }
+        giveBlockPlaceExp(p, block.getType(), null);
+    }
+
+    private void giveBlockPlaceExp(Player p, Material type, String customBlockId) {
+        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(p, ExpRateLimiter.Source.BLOCK_PLACE,
+                customBlockId != null ? customBlockId : type.name());
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
-            giveExp(p, system, system.getBlockPlaceExp(event.getBlock().getType()) * gain.multiplierFor(system));
+            double exp = customBlockId != null ? system.getCustomBlockPlaceExp(customBlockId) : system.getBlockPlaceExp(type);
+            giveExp(p, system, exp * gain.multiplierFor(system));
         });
     }
 
