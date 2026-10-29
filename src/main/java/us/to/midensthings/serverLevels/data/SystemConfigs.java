@@ -82,7 +82,15 @@ public final class SystemConfigs {
                             + ", level system names can only contain letters, numbers and underscores");
                     continue;
                 }
-                files.put(system, YamlConfiguration.loadConfiguration(file));
+                YamlConfiguration systemFile = YamlConfiguration.loadConfiguration(file);
+                if (upgrade(plugin, system, systemFile)) {
+                    try {
+                        systemFile.save(file);
+                    } catch (IOException e) {
+                        plugin.getLogger().warning("Could not save the updated " + SYSTEMS_FOLDER + "/" + file.getName() + ": " + e.getMessage());
+                    }
+                }
+                files.put(system, systemFile);
             }
         }
 
@@ -169,6 +177,83 @@ public final class SystemConfigs {
         }
         plugin.getLogger().info("Moved " + levelSystems.getKeys(false).size() + " level systems to " + SYSTEMS_FOLDER
                 + "/. The old files are in old-configs/");
+    }
+
+    /***
+     * Brings a system file written for an older version up to the current layout. Add a step here whenever the layout changes.
+     * @return whether anything changed, so the file needs saving
+     */
+    private static boolean upgrade(ServerLevels plugin, String system, YamlConfiguration file) {
+        boolean changed = false;
+        changed |= upgradeProjectKorra(plugin, system, file);
+        return changed;
+    }
+
+    // The projectkorra section used to have one list per kind of exp (abilities-use, abilities-kill-mob, ...).
+    // It's now grouped by ability, with defaults, per element settings, and mobs.kill / mobs.damage
+    private static boolean upgradeProjectKorra(ServerLevels plugin, String system, YamlConfiguration file) {
+        ConfigurationSection pk = file.getConfigurationSection(PROJECTKORRA);
+        if (pk == null || (!pk.contains("exp-gain") && !pk.contains("abilities-use") && !pk.contains("kill-mobs")
+                && !pk.contains("abilities-kill-player") && !pk.contains("abilities-kill-mob")
+                && !pk.contains("abilities-damage-player") && !pk.contains("abilities-damage-mob") && !pk.contains("damage-mobs"))) {
+            return false;
+        }
+
+        // Old exp-gain key -> new defaults key, and old per ability list -> new per ability key
+        // Ordered, so the converted file lists them the same way every time
+        Map<String, String> defaults = new LinkedHashMap<>();
+        defaults.put("bending-use-ability", "use");
+        defaults.put("bending-kill-player", "kill-player");
+        defaults.put("bending-kill-mob", "kill-mob");
+        defaults.put("bending-damage-player", "damage-player");
+        defaults.put("bending-damage-mob", "damage-mob");
+        Map<String, String> perAbility = new LinkedHashMap<>();
+        perAbility.put("abilities-use", "use");
+        perAbility.put("abilities-kill-player", "kill-player");
+        perAbility.put("abilities-kill-mob", "kill-mob");
+        perAbility.put("abilities-damage-player", "damage-player");
+        perAbility.put("abilities-damage-mob", "damage-mob");
+
+        YamlConfiguration upgraded = new YamlConfiguration();
+        ConfigurationSection oldDefaults = pk.getConfigurationSection("exp-gain");
+        if (oldDefaults != null) {
+            defaults.forEach((oldKey, newKey) -> {
+                if (oldDefaults.contains(oldKey)) {
+                    upgraded.set("defaults." + newKey, oldDefaults.getDouble(oldKey));
+                }
+            });
+        }
+        perAbility.forEach((oldSection, newKey) -> {
+            ConfigurationSection abilities = pk.getConfigurationSection(oldSection);
+            if (abilities != null) {
+                for (String ability : abilities.getKeys(false)) {
+                    upgraded.set("abilities." + ability + "." + newKey, abilities.getDouble(ability));
+                }
+            }
+        });
+        for (String[] mobSection : new String[][]{{"kill-mobs", "kill"}, {"damage-mobs", "damage"}}) {
+            ConfigurationSection mobs = pk.getConfigurationSection(mobSection[0]);
+            if (mobs != null) {
+                for (String mob : mobs.getKeys(false)) {
+                    upgraded.set("mobs." + mobSection[1] + "." + mob, mobs.getDouble(mob));
+                }
+            }
+        }
+        // Keep anything that isn't part of the old layout
+        Set<String> oldKeys = new HashSet<>(perAbility.keySet());
+        oldKeys.addAll(List.of("exp-gain", "kill-mobs", "damage-mobs"));
+        for (String key : pk.getKeys(false)) {
+            if (!oldKeys.contains(key) && !upgraded.contains(key)) {
+                copyValue(pk, key, upgraded);
+            }
+        }
+
+        ConfigurationSection section = file.createSection(PROJECTKORRA);
+        copy(upgraded, section);
+        file.setComments(PROJECTKORRA, List.of("Only used when ProjectKorra is installed. Exp for each ability comes from abilities, then its",
+                "element (or sub-element) in elements, then defaults. mobs gives extra exp for bending specific mobs"));
+        plugin.getLogger().info("Updated the projectkorra section of " + SYSTEMS_FOLDER + "/" + system + ".yml to the new layout");
+        return true;
     }
 
     // Copies every key of a section into another, with comments

@@ -89,36 +89,44 @@ milestones:
     messages:
       - '<green>You''ve earned a diamond for reaching level 20!</green>'
 
-# Only used when ProjectKorra is installed
+# Only used when ProjectKorra is installed. Exp for each ability comes from abilities, then its element (or sub-element) in
+# elements, then defaults. Each can set: use, kill-player, kill-mob, damage-player, damage-mob
 projectkorra:
-  exp-gain:
-    bending-kill-player: 0.8
-    bending-kill-mob: 0.6
-    bending-damage-player: 0.04
-    bending-damage-mob: 0.02
-    bending-use-ability: 0.1
-  abilities-use:
-    EarthSmash: 1.0
-    Lightning: 2.0
-    AvatarState: 2.0
-  abilities-kill-player:
-    EarthSmash: 0.1
-    Lightning: 0.4
-  abilities-kill-mob:
-    EarthSmash: 0.1
-    Lightning: 0.4
-  abilities-damage-player:
-    EarthSmash: 0.1
-    Lightning: 0.4
-  abilities-damage-mob:
-    EarthSmash: 0.1
-    Lightning: 0.4
-  kill-mobs:
-    ENDERMAN: 0.1
-    MANNEQUIN: 0.7
-  damage-mobs:
-    ENDERMAN: 0.1
-    MANNEQUIN: 0.1
+  # Exp for every ability, unless its element or the ability itself sets its own
+  defaults:
+    use: 0.1
+    kill-player: 0.8
+    kill-mob: 0.6
+    damage-player: 0.04
+    damage-mob: 0.02
+  # Exp for every ability of an element or sub-element: air, water, earth, fire, chi, avatar, or a sub-element like lightning,
+  # lava or bluefire. Sub-elements are checked before their element
+  elements: {}
+  #   lightning:
+  #     use: 0.5
+  abilities:
+    AvatarState:
+      use: 2.0
+    EarthSmash:
+      use: 1.0
+      kill-player: 0.1
+      kill-mob: 0.1
+      damage-player: 0.1
+      damage-mob: 0.1
+    Lightning:
+      use: 2.0
+      kill-player: 0.4
+      kill-mob: 0.4
+      damage-player: 0.4
+      damage-mob: 0.4
+  # Extra exp for bending specific mobs, added to the ability's exp
+  mobs:
+    kill:
+      ENDERMAN: 0.1
+      MANNEQUIN: 0.7
+    damage:
+      ENDERMAN: 0.1
+      MANNEQUIN: 0.1
 
 # Only used when MythicMobs is installed
 mythicmobs:

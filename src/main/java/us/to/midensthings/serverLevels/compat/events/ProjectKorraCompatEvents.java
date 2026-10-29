@@ -1,5 +1,7 @@
 package us.to.midensthings.serverLevels.compat.events;
 
+import com.projectkorra.projectkorra.Element;
+import com.projectkorra.projectkorra.ability.CoreAbility;
 import com.projectkorra.projectkorra.event.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -48,7 +50,7 @@ public class ProjectKorraCompatEvents implements Listener {
             // player death. Repeats are counted per victim, so killing the same player over and over gives less exp
             ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, victim.getUniqueId().toString());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-player", "abilities-kill-player", abilityName);
+                double expFromAbility = getAbilityExp(levelSystem, "kill-player", abilityName);
                 giveExp(attacker, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
             });
 
@@ -57,8 +59,8 @@ public class ProjectKorraCompatEvents implements Listener {
             ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, mobKey(event.getEntity()));
             boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-kill-mob", "abilities-kill-mob", abilityName);
-                double expFromMob = getMobExp(levelSystem, "kill-mobs", event.getEntity());
+                double expFromAbility = getAbilityExp(levelSystem, "kill-mob", abilityName);
+                double expFromMob = getMobExp(levelSystem, "kill", event.getEntity());
                 double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
                 giveExp(attacker, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * gain.multiplierFor(levelSystem));
             });
@@ -88,7 +90,7 @@ public class ProjectKorraCompatEvents implements Listener {
         if (event.getEntity() instanceof Player) {
             // player damaged
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-player", "abilities-damage-player", abilityName);
+                double expFromAbility = getAbilityExp(levelSystem, "damage-player", abilityName);
                 giveExp(source, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
             });
 
@@ -96,8 +98,8 @@ public class ProjectKorraCompatEvents implements Listener {
             // mob damaged
             boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-                double expFromAbility = getAbilityExp(levelSystem, "bending-damage-mob", "abilities-damage-mob", abilityName);
-                double expFromMob = getMobExp(levelSystem, "damage-mobs", event.getEntity());
+                double expFromAbility = getAbilityExp(levelSystem, "damage-mob", abilityName);
+                double expFromMob = getMobExp(levelSystem, "damage", event.getEntity());
                 double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
                 giveExp(source, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * gain.multiplierFor(levelSystem));
             });
@@ -111,7 +113,7 @@ public class ProjectKorraCompatEvents implements Listener {
     public void onAbilityUsed(Player player, String abilityName) {
         ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(player, ExpRateLimiter.Source.BENDING_ABILITY, abilityName);
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
-            double expFromAbility = getAbilityExp(levelSystem, "bending-use-ability", "abilities-use", abilityName);
+            double expFromAbility = getAbilityExp(levelSystem, "use", abilityName);
             giveExp(player, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
         });
     }
@@ -127,26 +129,54 @@ public class ProjectKorraCompatEvents implements Listener {
         return entity.getType().name();
     }
 
-    // Gets the default exp from exp-gain, or the ability specific exp if the ability is listed in the given section
-    private double getAbilityExp(LevelSystem levelSystem, String defaultKey, String abilitySection, String abilityName) {
-        String systemName = levelSystem.getSystemName();
-        double exp = pkConf.getDouble(systemName+".exp-gain."+defaultKey);
+    /***
+     * Gets the exp for an ability from the system's projectkorra section, checking the ability first, then its sub-element
+     * (e.g. lightning), then its element (e.g. fire), then the defaults
+     * @param type use, kill-player, kill-mob, damage-player or damage-mob
+     */
+    private double getAbilityExp(LevelSystem levelSystem, String type, String abilityName) {
+        ConfigurationSection settings = pkConf.getConfigurationSection(levelSystem.getSystemName());
+        if (settings == null) {
+            return 0;
+        }
 
-        ConfigurationSection abilities = pkConf.getConfigurationSection(systemName+"."+abilitySection);
-        if (abilities != null) {
-            for (String ability : abilities.getKeys(false)) {
-                if (abilityName.equalsIgnoreCase(ability)) {
-                    exp = abilities.getDouble(ability);
-                    break;
+        Double exp = findExp(settings.getConfigurationSection("abilities"), abilityName, type);
+        if (exp != null) {
+            return exp;
+        }
+
+        CoreAbility ability = CoreAbility.getAbility(abilityName);
+        if (ability != null) {
+            Element element = ability.getElement();
+            while (element != null) {
+                exp = findExp(settings.getConfigurationSection("elements"), element.getName(), type);
+                if (exp != null) {
+                    return exp;
                 }
+                element = element instanceof Element.SubElement subElement ? subElement.getParentElement() : null;
             }
         }
-        return exp;
+        return settings.getDouble("defaults." + type, 0);
     }
 
-    // Gets the exp for the mob from the given section. MythicMobs names are checked for mythic mobs, vanilla entity types otherwise
-    private double getMobExp(LevelSystem levelSystem, String mobSection, Entity entity) {
-        ConfigurationSection mobs = pkConf.getConfigurationSection(levelSystem.getSystemName()+"."+mobSection);
+    // The exp of the given type for the named entry (ability or element, any case), or null if it doesn't set one
+    private static Double findExp(ConfigurationSection section, String name, String type) {
+        if (section == null) {
+            return null;
+        }
+        for (String key : section.getKeys(false)) {
+            if (key.equalsIgnoreCase(name)) {
+                ConfigurationSection entry = section.getConfigurationSection(key);
+                return entry != null && entry.contains(type) ? entry.getDouble(type) : null;
+            }
+        }
+        return null;
+    }
+
+    // Gets the extra exp for bending the mob, from mobs.kill or mobs.damage. MythicMobs names are checked for mythic mobs,
+    // vanilla entity types otherwise
+    private double getMobExp(LevelSystem levelSystem, String type, Entity entity) {
+        ConfigurationSection mobs = pkConf.getConfigurationSection(levelSystem.getSystemName()+".mobs."+type);
         if (mobs == null) {
             return 0;
         }
