@@ -78,9 +78,16 @@ blocks:
   break-silk-touch: {}
   place: {}
 
-# Rewards for reaching a level. Messages use MiniMessage. Permissions require LuckPerms
+# Rewards for reaching a level. Each key is a level, or every-N for every multiple of N (every-10 runs at 10, 20, 30, ...).
+# Messages and commands can use %player%, %level% and %system%. Messages use MiniMessage. Permissions require LuckPerms.
+# Commands run as the console, unless the milestone has run-as: player
 use-milestones: true
 milestones:
+  # every-25:
+  #   commands:
+  #     - 'give %player% emerald 5'
+  #   messages:
+  #     - '<green>Level %level% in %system%! Here are 5 emeralds.</green>'
   5:
     commands:
       - 'give %player% diamond 1'

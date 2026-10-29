@@ -74,7 +74,9 @@ public class LevelSystem {
     public static final String DEFAULT_BOOSTER_START_MSG = "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>";
     public static final String DEFAULT_BOOSTER_END_MSG = "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>";
 
+    // Levels with a milestone, and the intervals of repeating milestones (every-N keys)
     private List<Integer> milestones;
+    private List<Integer> repeatingMilestones = new ArrayList<>();
 
     private PlayerCache playerCache;
 
@@ -139,8 +141,25 @@ public class LevelSystem {
             YamlConfiguration milestoneConf = plugin.getMilestonesConf();
             if (milestoneConf.getConfigurationSection(systemName) != null)  {
                 // setup milestones
+                // Keys are a level, or every-N for a milestone at every multiple of N
                 milestoneConf.getConfigurationSection(systemName).getKeys(false).forEach(milestone -> {
-                    milestones.add(Integer.parseInt(milestone));
+                    String key = milestone.toLowerCase(Locale.ROOT);
+                    try {
+                        if (key.startsWith("every-")) {
+                            int interval = Integer.parseInt(key.substring("every-".length()));
+                            if (interval > 0) {
+                                repeatingMilestones.add(interval);
+                                return;
+                            }
+                        } else {
+                            milestones.add(Integer.parseInt(key));
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        // Warned below
+                    }
+                    plugin.getLogger().warning("Invalid milestone '" + milestone + "' in systems/" + systemName
+                            + ".yml, use a level like 10, or every-10 for every 10 levels");
                 });
             } else {
                 plugin.getLogger().warning("Level System " + systemName + " has milestones enabled but doesn't have any milestones in its milestones section!");
@@ -405,28 +424,74 @@ public class LevelSystem {
         return LeveledPlayer.fromPlayer(p,this.systemName);
     }
 
+    /***
+     * Gives the rewards of every milestone for the level: the milestone for that exact level, then each repeating
+     * (every-N) milestone the level is a multiple of
+     */
     public void runMilestone(int level, Player p) {
-        if (p == null || !milestones.contains(level)) {
-            // No milestones found
+        if (p == null) {
+            return;
+        }
+        List<String> keys = new ArrayList<>();
+        if (milestones.contains(level)) {
+            keys.add(String.valueOf(level));
+        }
+        for (int interval : repeatingMilestones) {
+            if (level % interval == 0) {
+                keys.add("every-" + interval);
+            }
+        }
+        if (keys.isEmpty()) {
             return;
         }
 
-        YamlConfiguration milestoneConf = plugin.getMilestonesConf();
-        List<String> messages = milestoneConf.getStringList(systemName+"."+level+".messages");
-        List<String> commands = milestoneConf.getStringList(systemName+"."+level+".commands");
-
-        for(String message : messages) {
-            p.sendMessage(MessageFormatter.format(p, message.replace("%player%",p.getName())));
+        ConfigurationSection systemMilestones = plugin.getMilestonesConf().getConfigurationSection(systemName);
+        for (String key : keys) {
+            ConfigurationSection milestone = findIgnoreCase(systemMilestones, key);
+            if (milestone != null) {
+                runMilestoneRewards(milestone, level, p);
+            }
         }
-        for(String command : commands) {
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),MessageFormatter.formatPlain(p, command.replace("%player%",p.getName())));
+    }
+
+    // Messages, commands and permissions of one milestone
+    private void runMilestoneRewards(ConfigurationSection milestone, int level, Player p) {
+        for (String message : milestone.getStringList("messages")) {
+            p.sendMessage(MessageFormatter.format(p, fillMilestonePlaceholders(message, level, p)));
+        }
+        // Commands run as the console unless run-as is player
+        boolean runAsPlayer = milestone.getString("run-as", "console").equalsIgnoreCase("player");
+        for (String command : milestone.getStringList("commands")) {
+            String filled = MessageFormatter.formatPlain(p, fillMilestonePlaceholders(command, level, p));
+            if (runAsPlayer) {
+                p.performCommand(filled.startsWith("/") ? filled.substring(1) : filled);
+            } else {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), filled);
+            }
         }
 
         if (plugin.enabledCompats.contains("LuckPerms")) {
-            List<String> perms = milestoneConf.getStringList(systemName+"."+level+".permissions");
+            List<String> perms = milestone.getStringList("permissions");
             LuckPermsCompat lpComp = new LuckPermsCompat();
             lpComp.addPermissions(p,perms);
         }
+    }
+
+    private String fillMilestonePlaceholders(String text, int level, Player p) {
+        return text.replace("%player%", p.getName()).replace("%level%", String.valueOf(level)).replace("%system%", systemName);
+    }
+
+    // A sub section by key, ignoring case (so Every-10 and every-10 both work)
+    private static ConfigurationSection findIgnoreCase(ConfigurationSection section, String key) {
+        if (section == null) {
+            return null;
+        }
+        for (String existing : section.getKeys(false)) {
+            if (existing.equalsIgnoreCase(key) && section.isConfigurationSection(existing)) {
+                return section.getConfigurationSection(existing);
+            }
+        }
+        return null;
     }
 
 
@@ -508,6 +573,13 @@ public class LevelSystem {
         } else if (!showExpGain()) {
             setExpGainMsg(DEFAULT_EXP_GAIN_MSG);
         }
+    }
+
+    /***
+     * @return the intervals of this system's repeating milestones, e.g. 10 for an every-10 milestone
+     */
+    public List<Integer> getRepeatingMilestones() {
+        return Collections.unmodifiableList(repeatingMilestones);
     }
 
     public List<Integer> getMilestones() {
