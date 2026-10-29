@@ -6,8 +6,9 @@ auto-add-players: false
 max-level: 20
 exp-gain-multiplier: 0.0
 
-send-message-on-levelup: true
 levelup-message: '<green>You leveled up! New mining level: %level%</green>'
+# No message above the hotbar when gaining mining exp
+exp-gain-message: ''
 
 exp-gain:
   on-chat: 0.0

@@ -28,7 +28,6 @@ public class LevelSystem {
     private String systemName;
 
     // Whether or not this system sends the player a message when they level up
-    private boolean sendMsgOnLevelup;
     // Whether or not this system uses the milestone system to reward levelups
     private boolean useMilestones;
 
@@ -54,7 +53,6 @@ public class LevelSystem {
     private double expOnBlockBreak;
     private double expOnBlockPlace;
 
-    private boolean showExpGain;
     private boolean autoAddPlayers;
     private String expGainMsg;
 
@@ -63,6 +61,10 @@ public class LevelSystem {
     // Custom booster broadcast messages, null uses the defaults
     private String boosterStartMsg;
     private String boosterEndMsg;
+
+    // Used when the deprecated setLevelUpMsg(true) / setShowExpGain(true) turn a message on that had none
+    public static final String DEFAULT_LEVELUP_MSG = "<green>You leveled up! New level: %level%</green>";
+    public static final String DEFAULT_EXP_GAIN_MSG = "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>";
 
     private static final String DEFAULT_BOOSTER_START_MSG = "<gold>A <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has started! It lasts <yellow>%duration%</yellow>.</gold>";
     private static final String DEFAULT_BOOSTER_END_MSG = "<gold>The <yellow>%multiplier%x</yellow> exp booster for <yellow>%system%</yellow> has ended.</gold>";
@@ -123,10 +125,8 @@ public class LevelSystem {
         this.systemName = systemName;
         this.playerCache = new PlayerCache(systemName);
         // Get yamlconfiguration for level systems and fill in the class
-        sendMsgOnLevelup = levelSystemConf.getBoolean(systemName+".send-message-on-levelup");
-        if (sendMsgOnLevelup) {
-            lvlUpMsg = levelSystemConf.getString(systemName+".levelup-message");
-        }
+        // An empty (or missing) message turns it off
+        lvlUpMsg = levelSystemConf.getString(systemName+".levelup-message", "");
 
         useMilestones = levelSystemConf.getBoolean(systemName+".use-milestones");
         milestones = new ArrayList<>();
@@ -160,8 +160,7 @@ public class LevelSystem {
         scalarType = parseScalarType(levelSystemConf.getString(systemName+".exp-requirements.exp-scalar-type"));
         rebuildExpRequirementTable();
 
-        showExpGain = levelSystemConf.getBoolean(systemName+".show-exp-gain");
-        expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message");
+        expGainMsg = levelSystemConf.getString(systemName+".exp-gain-message", "");
 
         broadcastBoosters = levelSystemConf.getBoolean(systemName+".broadcast-boosters", false);
         boosterStartMsg = levelSystemConf.getString(systemName+".booster-start-message");
@@ -274,10 +273,7 @@ public class LevelSystem {
     public void saveToConfig() {
         // Written to the system's own file in systems/, keeping its other sections (mobs, blocks, milestones, ...)
         YamlConfiguration file = plugin.getSystemFile(systemName);
-        file.set("send-message-on-levelup",sendMsgOnLevelup);
-        if (sendMsgOnLevelup) {
-            file.set("levelup-message",lvlUpMsg);
-        }
+        file.set("levelup-message",lvlUpMsg);
 
         file.set("use-milestones",useMilestones);
         file.set("auto-add-players",autoAddPlayers);
@@ -297,7 +293,6 @@ public class LevelSystem {
 
         file.set("exp-requirements.exp-scalar-type",scalarType.toString());
 
-        file.set("show-exp-gain",showExpGain);
         file.set("exp-gain-message",expGainMsg);
 
         file.set("broadcast-boosters",broadcastBoosters);
@@ -392,7 +387,7 @@ public class LevelSystem {
 
     public void sendLevelupMessage(Player p, int level) {
         // Support MiniMessage formatting for colors by using MiniMessage API
-        if (p != null && this.sendMsgOnLevelup && lvlUpMsg != null) {
+        if (p != null && sendsMsgOnLevelup()) {
             String msg = lvlUpMsg.replace("%player%",p.getName()).replace("%level%",String.valueOf(level));
             p.sendMessage(MessageFormatter.format(p, msg));
         }
@@ -460,23 +455,34 @@ public class LevelSystem {
         this.boosterEndMsg = boosterEndMsg;
     }
 
+    /***
+     * @return the message shown above the hotbar when exp is gained, empty when it's turned off
+     */
     public String getExpGainMsg() {
-        if (expGainMsg == null) {
-            return "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>";
-        }
-        return expGainMsg;
+        return expGainMsg == null ? "" : expGainMsg;
     }
 
+    /***
+     * @param expGainMsg the message shown above the hotbar when exp is gained, empty or null to turn it off
+     */
     public void setExpGainMsg(String expGainMsg) {
-        this.expGainMsg = expGainMsg;
+        this.expGainMsg = expGainMsg == null ? "" : expGainMsg;
     }
 
     public boolean showExpGain() {
-        return showExpGain;
+        return !getExpGainMsg().isEmpty();
     }
 
+    /***
+     * @deprecated the exp gain message is turned off by setting it to empty, use setExpGainMsg
+     */
+    @Deprecated
     public void setShowExpGain(boolean showExpGain) {
-        this.showExpGain = showExpGain;
+        if (!showExpGain) {
+            setExpGainMsg("");
+        } else if (!showExpGain()) {
+            setExpGainMsg(DEFAULT_EXP_GAIN_MSG);
+        }
     }
 
     public List<Integer> getMilestones() {
@@ -484,11 +490,19 @@ public class LevelSystem {
     }
 
     public boolean sendsMsgOnLevelup() {
-        return sendMsgOnLevelup;
+        return lvlUpMsg != null && !lvlUpMsg.isEmpty();
     }
 
+    /***
+     * @deprecated the level up message is turned off by setting it to empty, use setLevelUpMsg(String)
+     */
+    @Deprecated
     public void setLevelUpMsg (boolean sendMsgOnLevelup) {
-        this.sendMsgOnLevelup = sendMsgOnLevelup;
+        if (!sendMsgOnLevelup) {
+            setLevelUpMsg("");
+        } else if (!sendsMsgOnLevelup()) {
+            setLevelUpMsg(DEFAULT_LEVELUP_MSG);
+        }
     }
 
     public boolean usingMilestones() {
@@ -499,12 +513,18 @@ public class LevelSystem {
         this.useMilestones = useMilestones;
     }
 
+    /***
+     * @return the message sent on level up, empty when it's turned off
+     */
     public String getLevelUpMsg() {
-        return lvlUpMsg;
+        return lvlUpMsg == null ? "" : lvlUpMsg;
     }
 
+    /***
+     * @param lvlUpMsg the message sent on level up, empty or null to turn it off
+     */
     public void setLevelUpMsg(String lvlUpMsg) {
-        this.lvlUpMsg = lvlUpMsg;
+        this.lvlUpMsg = lvlUpMsg == null ? "" : lvlUpMsg;
     }
 
     public int getMaxLevel() {

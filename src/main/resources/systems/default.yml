@@ -9,11 +9,9 @@ max-level: 100
 # Added to each player's own exp multiplier (1 unless set with /sl setMultiplier), so 0.0 gives normal exp
 exp-gain-multiplier: 0.0
 
-# Messages use MiniMessage format for color and text effects
-send-message-on-levelup: true
+# Messages use MiniMessage format for color and text effects. Set a message to '' to turn it off
 levelup-message: '<green>You leveled up! New level: %level%</green>'
 # Shown above the hotbar each time exp is gained
-show-exp-gain: true
 exp-gain-message: "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>"
 
 # Broadcasts to everyone when an exp booster for this system starts or ends. Boosters are started with /sl booster

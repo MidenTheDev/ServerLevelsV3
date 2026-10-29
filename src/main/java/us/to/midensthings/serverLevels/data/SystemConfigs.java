@@ -187,7 +187,34 @@ public final class SystemConfigs {
         boolean changed = false;
         changed |= upgradeProjectKorra(plugin, system, file);
         changed |= upgradeBlocks(plugin, system, file);
+        changed |= upgradeMessageToggles(plugin, system, file);
         return changed;
+    }
+
+    // send-message-on-levelup and show-exp-gain turned the level up and exp gain messages on and off. Now an empty message
+    // turns it off, so each toggle is folded into its message
+    private static boolean upgradeMessageToggles(ServerLevels plugin, String system, YamlConfiguration file) {
+        if (!file.contains("send-message-on-levelup") && !file.contains("show-exp-gain")) {
+            return false;
+        }
+        if (file.contains("send-message-on-levelup")) {
+            if (!file.getBoolean("send-message-on-levelup") || !file.isString("levelup-message")) {
+                file.set("levelup-message", "");
+            }
+            file.set("send-message-on-levelup", null);
+        }
+        if (file.contains("show-exp-gain")) {
+            if (!file.getBoolean("show-exp-gain")) {
+                file.set("exp-gain-message", "");
+            } else if (!file.isString("exp-gain-message")) {
+                // It used to fall back to this built-in message
+                file.set("exp-gain-message", "<green>Gained </green><dark_green>%exp%</dark_green><green> exp</green>");
+            }
+            file.set("show-exp-gain", null);
+        }
+        file.setComments("levelup-message", List.of("Messages use MiniMessage format for color and text effects. Set a message to '' to turn it off"));
+        plugin.getLogger().info("Updated the level up and exp gain messages of " + SYSTEMS_FOLDER + "/" + system + ".yml, '' now turns a message off");
+        return true;
     }
 
     // Block breaking used to have two full lists, break.no-silk and break.silk. It's now one break list, plus break-silk-touch

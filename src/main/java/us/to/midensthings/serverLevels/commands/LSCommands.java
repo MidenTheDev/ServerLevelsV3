@@ -75,16 +75,12 @@ public class LSCommands {
                             .then(setting("useMilestones", BoolArgumentType.bool(), Boolean.class,
                                     LevelSystem::usingMilestones, LevelSystem::setUsingMilestones))
 
-                            .then(setting("showExpGain", BoolArgumentType.bool(), Boolean.class,
-                                    LevelSystem::showExpGain, LevelSystem::setShowExpGain))
-                            // Messages take the rest of the command, so they can contain spaces and MiniMessage tags
+                            // Messages take the rest of the command, so they can contain spaces and MiniMessage tags.
+                            // "off" (or "none") turns the message off
                             .then(setting("expGainMessage", StringArgumentType.greedyString(), String.class,
-                                    LevelSystem::getExpGainMsg, LevelSystem::setExpGainMsg))
-
-                            .then(setting("sendLevelUpMessage", BoolArgumentType.bool(), Boolean.class,
-                                    LevelSystem::sendsMsgOnLevelup, (ls, send) -> ls.setLevelUpMsg((boolean) send)))
+                                    LevelSystem::getExpGainMsg, (ls, msg) -> ls.setExpGainMsg(messageOrOff(msg))))
                             .then(setting("levelUpMessage", StringArgumentType.greedyString(), String.class,
-                                    LevelSystem::getLevelUpMsg, (ls, msg) -> ls.setLevelUpMsg((String) msg)))
+                                    LevelSystem::getLevelUpMsg, (ls, msg) -> ls.setLevelUpMsg(messageOrOff(msg))))
 
                             .then(setting("broadcastBoosters", BoolArgumentType.bool(), Boolean.class,
                                     LevelSystem::broadcastsBoosters, LevelSystem::setBroadcastBoosters))
@@ -214,6 +210,11 @@ public class LSCommands {
                 .color(TextColor.color(Color.GREEN.asRGB())));
         sender.sendMessage(Component.text("Use /ls save " + levelSystem.getSystemName() + " to keep this change after a reload or restart")
                 .color(TextColor.color(Color.GRAY.asRGB())));
+    }
+
+    // A message typed in a command, where "off" or "none" means no message
+    private static String messageOrOff(String message) {
+        return message.equalsIgnoreCase("off") || message.equalsIgnoreCase("none") ? "" : message;
     }
 
     /***
