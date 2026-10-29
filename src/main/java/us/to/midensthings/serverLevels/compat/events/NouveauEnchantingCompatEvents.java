@@ -88,7 +88,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
     @EventHandler
     public void onEnchant(PlayerEnchantEvent event) {
         Map<String, SystemEnchantExp> exp = systemExp;
-        double rate = plugin.getExpRateLimiter().recordGain(event.getPlayer(), ExpRateLimiter.Source.ENCHANTING, event.getEnchantment().getKey().asString());
+        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(event.getPlayer(), ExpRateLimiter.Source.ENCHANTING, event.getEnchantment().getKey().asString());
 
         plugin.getLevelSystemRegistry().getAllSystems().forEach(system -> {
             SystemEnchantExp settings = exp.get(system.getSystemName());
@@ -104,7 +104,7 @@ public class NouveauEnchantingCompatEvents implements Listener {
                     // Player isn't in this system
                     return;
                 }
-                lp.gainExp(expToAdd * rate);
+                lp.gainExp(expToAdd * gain.multiplierFor(system));
             }
         });
 

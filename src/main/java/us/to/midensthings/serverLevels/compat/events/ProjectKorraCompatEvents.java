@@ -45,21 +45,21 @@ public class ProjectKorraCompatEvents implements Listener {
 
         if (event.getEntity() instanceof Player victim) {
             // player death. Repeats are counted per victim, so killing the same player over and over gives less exp
-            double rate = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, victim.getUniqueId().toString());
+            ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, victim.getUniqueId().toString());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
                 double expFromAbility = getAbilityExp(levelSystem, "bending-kill-player", "abilities-kill-player", abilityName);
-                giveExp(attacker, levelSystem, expFromAbility * rate);
+                giveExp(attacker, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
             });
 
         } else {
             // not player death. Repeats are counted per mob type, like a mob grinder
-            double rate = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, mobKey(event.getEntity()));
+            ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(attacker, ExpRateLimiter.Source.BENDING_KILL, mobKey(event.getEntity()));
             boolean fromSpawner = EntityUtil.isFromSpawner(event.getEntity());
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
                 double expFromAbility = getAbilityExp(levelSystem, "bending-kill-mob", "abilities-kill-mob", abilityName);
                 double expFromMob = getMobExp(levelSystem, "kill-mobs", event.getEntity());
                 double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
-                giveExp(attacker, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * rate);
+                giveExp(attacker, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * gain.multiplierFor(levelSystem));
             });
         }
 
@@ -82,13 +82,13 @@ public class ProjectKorraCompatEvents implements Listener {
         Player source = event.getSource();
         String abilityName = event.getAbility().getName();
         // Repeats are counted per ability, so spamming one ability on a target gives less exp
-        double rate = plugin.getExpRateLimiter().recordGain(source, ExpRateLimiter.Source.BENDING_DAMAGE, abilityName);
+        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(source, ExpRateLimiter.Source.BENDING_DAMAGE, abilityName);
 
         if (event.getEntity() instanceof Player) {
             // player damaged
             plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
                 double expFromAbility = getAbilityExp(levelSystem, "bending-damage-player", "abilities-damage-player", abilityName);
-                giveExp(source, levelSystem, expFromAbility * rate);
+                giveExp(source, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
             });
 
         } else {
@@ -98,7 +98,7 @@ public class ProjectKorraCompatEvents implements Listener {
                 double expFromAbility = getAbilityExp(levelSystem, "bending-damage-mob", "abilities-damage-mob", abilityName);
                 double expFromMob = getMobExp(levelSystem, "damage-mobs", event.getEntity());
                 double spawnerMultiplier = fromSpawner ? levelSystem.getSpawnerMobMultiplier() : 1;
-                giveExp(source, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * rate);
+                giveExp(source, levelSystem, (expFromAbility + expFromMob) * spawnerMultiplier * gain.multiplierFor(levelSystem));
             });
         }
 
@@ -108,10 +108,10 @@ public class ProjectKorraCompatEvents implements Listener {
      * Gives exp for using an ability. Called once per use by PKAbilityUseTracker, which works out when an ability was used
      */
     public void onAbilityUsed(Player player, String abilityName) {
-        double rate = plugin.getExpRateLimiter().recordGain(player, ExpRateLimiter.Source.BENDING_ABILITY, abilityName);
+        ExpRateLimiter.Gain gain = plugin.getExpRateLimiter().recordGain(player, ExpRateLimiter.Source.BENDING_ABILITY, abilityName);
         plugin.getLevelSystemRegistry().getAllSystems().forEach(levelSystem -> {
             double expFromAbility = getAbilityExp(levelSystem, "bending-use-ability", "abilities-use", abilityName);
-            giveExp(player, levelSystem, expFromAbility * rate);
+            giveExp(player, levelSystem, expFromAbility * gain.multiplierFor(levelSystem));
         });
     }
 

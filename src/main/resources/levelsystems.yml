@@ -51,6 +51,11 @@ mining:
     on-blockplace: 0.0
   spawner-mobs:
     exp-multiplier: 1.0
+  # rate-limiter:
+  #   sources:
+  #     block-break: true
+  # Overrides the rate-limiter in config.yml for this system only. Any setting left out uses config.yml's value,
+  # e.g. the example above also limits mining the same block over and over in this system. Use enabled: false to turn it off here
   exp-requirements:
     base-exp-req: 8.0
     exp-req-multiplier: 0.5

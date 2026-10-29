@@ -90,7 +90,7 @@ public final class ServerLevels extends JavaPlugin {
         boosterManager = new BoosterManager();
         boosterManager.start();
         expRateLimiter = new ExpRateLimiter();
-        expRateLimiter.load(getConfig());
+        expRateLimiter.load(getConfig(), levelSystemsConf);
 
         // Level systems must exist before the join listener can load players into them
         registerLevelSystems();
@@ -203,7 +203,7 @@ public final class ServerLevels extends JavaPlugin {
                     applyConfigFiles(files);
                     registerLevelSystems();
                     startAutosave();
-                    expRateLimiter.load(getConfig());
+                    expRateLimiter.load(getConfig(), levelSystemsConf);
                 }, mainThread)
                 .whenComplete((ignored, error) -> reloading.set(false));
     }
