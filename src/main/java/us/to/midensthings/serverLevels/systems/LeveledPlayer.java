@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import us.to.midensthings.serverLevels.ServerLevels;
 import us.to.midensthings.serverLevels.util.MessageFormatter;
+import us.to.midensthings.serverLevels.customevents.ExpGainEvent;
 import us.to.midensthings.serverLevels.customevents.LevelDownEvent;
 import us.to.midensthings.serverLevels.customevents.LevelUpEvent;
 import us.to.midensthings.serverLevels.util.NamespacedKeys;
@@ -276,6 +277,11 @@ public class LeveledPlayer {
 
         }
         adjustLevel();
+        // Let other plugins see the gain, after any level ups it caused
+        if (expGained > 0) {
+            ExpGainEvent expGainEvent = new ExpGainEvent(this, expGained, expToAdd);
+            runOnMainThread(expGainEvent::callEvent);
+        }
     }
 
     /***
